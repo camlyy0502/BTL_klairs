@@ -8,6 +8,7 @@ import Pay from "../pages/User/Pay";
 import PayDetails from "../pages/User/Pay/PayDetails";
 import Introduce from "../pages/User/Introduce";
 import Contact from "../pages/User/Contact";
+import Login from "../pages/User/Login";
 import HomeAd from "../pages/Admin/Home";
 import Category from "../pages/Admin/Category";
 import Account from "../pages/Admin/Account/Account";
@@ -16,6 +17,9 @@ import Chat from "../pages/Admin/Chat";
 
 
 const publicRoutes = [
+    {
+        path: '/login', component: Login
+    },
     {
         path: '/', component: Home
     },

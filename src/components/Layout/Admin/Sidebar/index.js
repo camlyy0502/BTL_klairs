@@ -17,7 +17,7 @@ function Sidebar() {
     return (
         <div className="col-md-2 slider" style={{ backgroundColor: '#fff', minHeight: '100vh' }}>
             <div className="pt-3">
-                <img className='' style={{ width: 50, borderRadius: '50%', }} src='https://e7.pngegg.com/pngimages/754/474/png-clipart-computer-icons-system-administrator-avatar-computer-network-heroes-thumbnail.png' alt />
+                <img className='' style={{ width: 50, borderRadius: '50%', }} src='https://e7.pngegg.com/pngimages/754/474/png-clipart-computer-icons-system-administrator-avatar-computer-network-heroes-thumbnail.png' alt=""/>
                 <span style={{ fontSize: 16, marginLeft: 8, color: '#62677399' }}>Admin</span>
             </div>
             <h6 className="mt-4" style={{ color: '#62677399' }}>NAVIGATION</h6>

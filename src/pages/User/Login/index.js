@@ -36,8 +36,8 @@ const Login = ({ isVisible, onClose }) => {
                         <form action="#">
                             <h1>Create Account</h1>
                             <div className="social-container">
-                                <a href="#" className="social"><img src="https://coachingskills.vn/wp-content/uploads/2024/07/facebook-logo-icon-facebook-icon-png-images-icons-and-png-backgrounds-1.png" alt /></a>
-                                <a href="#" className="social"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png" alt /></a>
+                                <a href="#" className="social"><img src="https://coachingskills.vn/wp-content/uploads/2024/07/facebook-logo-icon-facebook-icon-png-images-icons-and-png-backgrounds-1.png" alt=""/></a>
+                                <a href="#" className="social"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png" alt=""/></a>
 
                             </div>
                             <span>or use your email for registration</span>
@@ -51,8 +51,8 @@ const Login = ({ isVisible, onClose }) => {
                         <form action="#">
                             <h1>Sign in</h1>
                             <div className="social-container">
-                                <a href="#" className="social"><img src="https://coachingskills.vn/wp-content/uploads/2024/07/facebook-logo-icon-facebook-icon-png-images-icons-and-png-backgrounds-1.png" alt /></a>
-                                <a href="#" className="social"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png" alt /></a>
+                                <a href="#" className="social"><img src="https://coachingskills.vn/wp-content/uploads/2024/07/facebook-logo-icon-facebook-icon-png-images-icons-and-png-backgrounds-1.png" alt=""/></a>
+                                <a href="#" className="social"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png" alt=""/></a>
 
                             </div>
                             <span>or use your account</span>

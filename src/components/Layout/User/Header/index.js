@@ -56,7 +56,7 @@ function Header() {
                         <div className='row h-100 align-items-center'>
                             <div className='col-md-3'>
                                 <Link to='/'>
-                                    <img src='https://klairsvietnam.vn/wp-content/uploads/2020/07/logo-klairs.png' />
+                                    <img src='https://klairsvietnam.vn/wp-content/uploads/2020/07/logo-klairs.png' alt=""/>
                                 </Link>
                             </div>
                             <div className='col-md-6 header-nav'>

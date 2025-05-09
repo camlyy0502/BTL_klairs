@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import ProductItem from "./ProductItem";
 import DashboardApi from '../../../Api/Product/DashboardApi';
 // import { useNavigate } from 'react-router-dom';
@@ -23,7 +23,7 @@ function Product() {
     const [total, setTotal] = useState();
     const [limit, setLimit] = useState(9);
 
-    const fetchProducts = async (page) => {
+    const fetchProducts = useCallback(async (page) => {
         try {
             const res = await DashboardApi.getLimitProduct(limit, page);
             setProducts(res.data);
@@ -33,10 +33,11 @@ function Product() {
         } catch (error) {
             console.error(error);
         }
-    };
+    }, [limit]);
+
     useEffect(() => {
         fetchProducts(currentPage);
-    }, [currentPage]);
+    }, [currentPage, fetchProducts]);
 
     const handlePageChange = (page) => {
         if (page > 0 && page <= totalPages) {
@@ -60,7 +61,7 @@ function Product() {
                             </p>
                         </div>
                         <div className='d-flex align-items-center justify-content-center'>
-                            <p className='m-0 me-4'>Hiển thị {currentPage != 1 ? (limit*(currentPage-1)+1) : 1}-{limit*currentPage < total ? limit*currentPage : total} của {total} kết quả</p>
+                            <p className='m-0 me-4'>Hiển thị {currentPage !== 1 ? (limit*(currentPage-1)+1) : 1}-{limit*currentPage < total ? limit*currentPage : total} của {total} kết quả</p>
                             <select>
                                 <option>Thứ tự mặc định</option>
                                 <option>Thứ tự theo mức độ phổ biến</option>

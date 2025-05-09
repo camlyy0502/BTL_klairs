@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 function Header() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -13,7 +13,7 @@ function Header() {
         <div className="container">
             <div className="header-admin row" style={{ height: '70px', alignItems: 'center' }}>
                 <div className="col-md-2">
-                    <img className='' style={{ width: 50, borderRadius: '50%', }} src='' alt />
+                    <img className='' style={{ width: 50, borderRadius: '50%', }} src='' alt="" />
                     <i style={{ fontFamily: '"Style Script"', fontSize: "26px" }}>Klairs</i>
                 </div>
                 <div className="col-md-6 d-flex " style={{ alignItems: 'center' }}>
@@ -27,7 +27,7 @@ function Header() {
                     <i class="fas fa-bell" style={{ color: '#62677399' }}></i>
                 </div>
                 <div className="col-md-2 account " onClick={toggleSettings} ref={settingsRef} style={{ position: 'relative', cursor: 'pointer' }}>
-                    <img className='' style={{ width: 50, borderRadius: '50%' }} src='https://e7.pngegg.com/pngimages/754/474/png-clipart-computer-icons-system-administrator-avatar-computer-network-heroes-thumbnail.png' alt />
+                    <img className='' style={{ width: 50, borderRadius: '50%' }} src='https://e7.pngegg.com/pngimages/754/474/png-clipart-computer-icons-system-administrator-avatar-computer-network-heroes-thumbnail.png' alt=""/>
                     <span style={{ fontSize: 16, color: '#62677399', marginLeft: '4px' }}>Admin</span>
                     <span style={{ fontSize: 16, color: '#62677399', marginLeft: '4px' }}><i class="fas fa-chevron-down"></i></span>
                     {isSettingsOpen && (
