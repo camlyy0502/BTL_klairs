@@ -1,10 +1,27 @@
 import React from 'react'
 import ProductItem from '../Product/ProductItem'
+import { useEffect, useState } from 'react';
+import DashboardApi from '../../../Api/Product/DashboardApi';
+// import { useNavigate } from 'react-router-dom';
 
 function Home() {
+    const [products, setProducts] = useState([]);
+    useEffect(() => {
+        const fetchAllProduct = async () => {
+            try {
+              const res = await DashboardApi.getAllProduct();
+              setProducts(res.data);
+            } catch (error) {
+              throw error;
+            }
+          };
+          fetchAllProduct();
+    }, []);
+    // const navigate = useNavigate();
+
     return (
-        <div classname="container">
-            <div classname="custom-container">
+        <div className="container">
+            <div className="custom-container">
                 <div id="carouselExample" className="carousel slide banner" data-bs-ride="carousel">
                     <div className="carousel-inner">
                         <div className="carousel-item">
@@ -16,7 +33,6 @@ function Home() {
                         <div className="carousel-item">
                             <img src="https://klairsvietnam.vn/wp-content/uploads/2020/07/banner-klairs.jpg" className="d-block w-100 " alt="Hình 2" />
                         </div>
-
                     </div>
                     {/* Nút điều hướng */}
                     <button className="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
@@ -38,49 +54,31 @@ function Home() {
                         
                         <h5 className='text-center mt-5' style={{ fontSize: '32px' }}>BỘ SẢN PHẨM DEAR KLAIRS</h5>
                         <div className='mt-4 row '>
-                            <div className='col-md-3 product-container'>
-                                <ProductItem
-                                    productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/serum-duong-trang-da-klairs-600x600.jpg'
-                                    productPrice='400.000'
-                                    productName='Serum Vitamin C dưỡng trắng da Klairs Freshly Jucied Vitamin Drop Serum'
-                                    productPriceSale='300.000'
-                                    sale='25'
-                                ></ProductItem>
-                            </div>
-                            <div className='col-md-3 product-container'>
-                                <ProductItem
-                                    productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/kem-chong-nang-klairs-1.jpg'
-                                    productPrice='400.000'
-                                    productName='Kem chống nắng bảo vệ da Klairs Soft Airi UV Essence Spf 50 PA++'
-                                    productPriceSale='300.000'
-                                    sale='25'
-                                ></ProductItem>
-                            </div>
-                            <div className='col-md-3 product-container'>
-                                <ProductItem
-                                    productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/Klairs-Rich-Moist-Soothing-Cream-600x600.jpg'
-                                    productPrice='400.000'
-                                    productName='Kem dưỡng ẩm Klairs Rich Moist Soothing Cream'
-                                    productPriceSale='300.000'
-                                    sale='25'
-                                ></ProductItem>
-                            </div>
-                            <div className='col-md-3 product-container'>
-                                <ProductItem
-                                    productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/Klairs-Rich-Moist-Soothing-Serum-600x600.jpg'
-                                    productPrice='400.000'
-                                    productName='Serum dưỡng ẩm Klairs Rich Moist Soothing Serum'
-                                    productPriceSale='300.000'
-                                    sale='25'
-                                ></ProductItem>
-                            </div>
+                            {
+                                products.map((product, index) => (
+                                    <div 
+                                        key={index} 
+                                        className='col-md-3 product-container'
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <ProductItem
+                                            productId={product.id}
+                                            productImg={product.url}
+                                            productPrice={product.price}
+                                            productName={product.name}
+                                            productPriceSale="500000"
+                                            sale={product.sale}
+                                            quantity={product.quantity}
+                                        ></ProductItem>
+                                    </div>
+                                ))
+                            }
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-    )
+    );
 }
 
 export default Home

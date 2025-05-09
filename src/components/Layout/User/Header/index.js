@@ -69,9 +69,9 @@ function Header() {
                                         </div>
                                     </li>
                                     <Link to='/'><li>TRANG CHỦ</li></Link>
-                                    <Link to='/Product'><li>SẢN PHẨM</li></Link>
-                                    <Link to='/Introduce'><li>GIỚI THIỆU</li></Link>
-                                    <Link to='/Contact'><li>LIÊN HỆ</li></Link>
+                                    <Link to='/products'><li>SẢN PHẨM</li></Link>
+                                    <Link to='/introduce'><li>GIỚI THIỆU</li></Link>
+                                    <Link to='/contact'><li>LIÊN HỆ</li></Link>
                                 </ul>
                             </div>
                             <div className='col-md-2 cart-item' style={{ position: 'relative', display: 'inline-block' }}>
