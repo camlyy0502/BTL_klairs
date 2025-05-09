@@ -5,7 +5,7 @@ const ProductItem = ({ productId, productImg, productName, productPrice, product
     return (
         <Link to={`/products/${productId}`}>
             <div className='product-item'>
-                <img src={productImg}/>
+                <img src={productImg} alt={productName}/>
                 <p className='text-center mt-2 mb-0' style={{ fontSize: '16px', color: '#000' }}>{productName}</p>
                 <p className='text-center mt-1 mb-0' style={{ color: '#000' }}>
                 <span style={{ textDecoration: sale > 0 ? 'line-through' : 'none' }}>
