@@ -6,10 +6,31 @@ const DashboardApi = {
     try {
       const response = await axiosClient.get('/products');
       return response.data;
-  } catch (error) {
+    } catch (error) {
       console.error('API Error:', error);
       throw error;
-  }
+    }
+  },
+  getLimitProduct: async (limit = 12, page = 1) => {
+    try {
+      const response = await axiosClient.get('/products', {
+        params: { limit, page }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+  
+  getDetailProduct: async (id) => {
+    try {
+      const response = await axiosClient.get(`/products/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
   },
 };
 

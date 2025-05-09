@@ -1,7 +1,7 @@
 //public routes
 import Home from "../pages/User/Home";
 import Admin from "../components/Layout/Admin";
-import Product from "../pages/User/Product/Product";
+import Product from "../pages/User/Product/Products";
 import ProductDetails from "../pages/User/Product/ProductDetails";
 import Cart from "../pages/User/Cart";
 import Pay from "../pages/User/Pay";
@@ -20,10 +20,10 @@ const publicRoutes = [
         path: '/', component: Home
     },
     {
-        path: '/Product', component: Product
+        path: '/products', component: Product
     },
     {
-        path: '/ProductDetails', component: ProductDetails
+        path: '/products/:productId', component: ProductDetails
     },
     {
         path: '/Cart', component: Cart
@@ -35,10 +35,10 @@ const publicRoutes = [
         path: '/PayDetails', component: PayDetails
     },
     {
-        path: '/Contact', component: Contact
+        path: '/contact', component: Contact
     },
     {
-        path: '/Introduce', component: Introduce
+        path: '/introduce', component: Introduce
     },
     {
         path: '/Admin', component: HomeAd, layout: Admin
