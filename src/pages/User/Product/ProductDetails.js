@@ -76,9 +76,14 @@ function ProductDetails() {
                         </ul>
                         <div className='d-flex align-items-center justify-content-between mt-3'>
                             <div className='d-flex'>
+                                {/* 
                                 <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>-</button>
                                 <input style={{ border: "1px solid #ddd", width: '40px', height: '38px' }} type='number' min='1' value='1' />
                                 <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>+</button>
+                                */}
+                                <input type="button" value="-" class="minus button is-form"/>
+                                <input type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value="1" title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" />
+                                <input type="button" value="+" class="plus button is-form"/>
                             </div>
                             <button style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none' }}>THÊM VÀO GIỎ HÀNG</button>
                         </div>
@@ -86,28 +91,33 @@ function ProductDetails() {
                     <div className='col-md-2'></div>
                 </div>
                 <div className={`buy-box d-flex align-items-center justify-content-center  ${showBuyBox ? "show" : ""}`}>
-                    <img style={{ width: '45px', height: '45px', marginLeft: '16px' }} src={productDetails.buyBoxImage} alt="Buy Box" />
-                    <p style={{ width: '230px', fontSize: '14px', fontWeight: '600', marginBottom: '0' }}>{productDetails.buyBoxName}</p>
+                    <img style={{ width: '45px', height: '45px', marginLeft: '16px' }} src={productDetails.thumb} alt="Buy Box" />
+                    <p style={{ width: '230px', fontSize: '14px', fontWeight: '600', marginBottom: '0' }}>{productDetails.name}</p>
                     <p className='text-center ml-2 mb-0' style={{ color: '#000' }}>
-                        <span style={{ textDecoration: 'line-through' }}>
-                            <span>{productDetails.buyBoxOriginalPrice}</span>
+                        <span style={{ textDecoration: productDetails.sale > 0 ? 'line-through' : 'none' }}>
+                            <span>{productDetails.price}</span>
                             <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute' }}>
                                 đ
                             </span>
                         </span>
+                        {productDetails.sale > 0 && (
                         <span style={{ marginLeft: '12px', fontWeight: '600' }}>
                             <span>{productDetails.buyBoxSalePrice}</span>
                             <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute' }}>
                                 đ
                             </span>
                         </span>
+                        )}
                     </p>
                     <div className='d-flex' style={{ marginLeft: '30px' }}></div>
-                        <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>-</button>
-                        <input style={{ border: "1px solid #ddd", width: '40px', height: '38px' }} type='number' min='1' value='1' />
-                        <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>+</button>
+                        {/* <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>-</button> */}
+                        {/* <input style={{ border: "1px solid #ddd", width: '40px', height: '38px' }} type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value="1" title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" /> */}
+                        {/* <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>+</button> */}
+                        <input type="button" value="-" class="minus button is-form"/>
+                        <input type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value="1" title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" />
+                        <input type="button" value="+" class="plus button is-form"/>
+                        <button disabled={productDetails.quantity === 0} style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none', marginLeft: '12px' }}>THÊM VÀO GIỎ HÀNG</button>
                     </div>
-                    <button style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none', marginLeft: '12px' }}>THÊM VÀO GIỎ HÀNG</button>
                 </div>
                 <div className='mt-5 ' style={{ borderTop: '1px solid #ddd' }}>
                     <p className='mt-2'>
