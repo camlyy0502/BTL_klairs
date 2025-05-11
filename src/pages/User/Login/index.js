@@ -1,7 +1,50 @@
+import {
+  useToast,
+} from "@chakra-ui/react";
 import React, { useState } from "react";
+import AccountApi from "../../../Api/Account/AccountApi";
 
 const Login = ({ isVisible, onClose }) => {
     const [isRightPanelActive, setRightPanelActive] = useState(false);
+
+    const [isSubmit, setIsSubmit] = useState(false);
+
+
+//   const {
+//     register,
+//     handleSubmit,
+//     formState: { errors },
+//   } = useForm();
+
+  const toast = useToast();
+
+  const login = async (data) => {
+    setIsSubmit(true);
+    try {
+      const { token } = await AccountApi.login(data);
+      localStorage.setItem("token", token);
+      toast({
+        position: "bottom",
+        title: `Đăng nhập thành công 🐱‍👤`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      setIsSubmit(false);
+      isVisible(true);
+    } catch (error) {
+      
+      toast({
+        position: "bottom",
+        title: `Đăng nhập thất bại 😱`,
+        description: "Tên đăng nhập hoặc mật khẩu không đúng!",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      setIsSubmit(false);
+    }
+  };
 
     const handleSignUpClick = () => {
         setRightPanelActive(true);
