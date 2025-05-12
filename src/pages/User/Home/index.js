@@ -1,8 +1,7 @@
-import React from 'react'
-import ProductItem from '../Product/ProductItem'
+import React from 'react';
+import ProductItem from '../Product/ProductItem';
 import { useEffect, useState } from 'react';
 import DashboardApi from '../../../Api/Product/DashboardApi';
-// import { useNavigate } from 'react-router-dom';
 
 function Home() {
     const [products, setProducts] = useState([]);
@@ -53,7 +52,7 @@ function Home() {
                         </p>
                         
                         <h5 className='text-center mt-5' style={{ fontSize: '32px' }}>BỘ SẢN PHẨM DEAR KLAIRS</h5>
-                        <div className='mt-4 row '>
+                        <div className='mt-4 row'>
                             {
                                 products.map((product, index) => (
                                     <div 

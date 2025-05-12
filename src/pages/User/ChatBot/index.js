@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, use } from "react";
 import "./chatbot.css";
 import ChatBotApi from "../../../Api/ChatBot/ChatBotApi";
+import { v4 as uuid4 } from 'uuid';
 
 export default function ChatBot() {
     const [uuid, setUuid] = useState(() => {
         const savedUuid = localStorage.getItem('session_id');
         if (savedUuid) return savedUuid;
-        const newUuid = crypto.randomUUID();
+        const newUuid = uuid4();
         localStorage.setItem('session_id', newUuid);
         return newUuid;
     });

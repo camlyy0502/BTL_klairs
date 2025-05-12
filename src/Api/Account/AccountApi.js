@@ -3,7 +3,7 @@ import axiosClient from "../AxiosClient";
 const AccountApi = {
   register: async (data) => {
     try {
-      const response = await axiosClient.post('/api/v1/register', JSON.stringify(data));
+      const response = await axiosClient.post('/api/register', JSON.stringify(data));
       return response;
     } catch (error) {
       console.error('API Error:', error);
@@ -12,16 +12,25 @@ const AccountApi = {
   },
   login: async (data) => {
     try {
-      const response = await axiosClient.post('/api/v1/login', JSON.stringify(data));
+      const response = await axiosClient.post('/api/login', JSON.stringify(data));
       return response;
     } catch (error) {
       console.error('API Error:', error);
       throw error;
     }
   },
-  logout: async (data) => {
+  logout: async () => {
     try {
-      const response = await axiosClient.post('/api/v1/logout', JSON.stringify(data));
+      const response = await axiosClient.post('/api/logout');
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+  info: async () => {
+    try {
+      const response = await axiosClient.get('/api/v1/info');
       return response;
     } catch (error) {
       console.error('API Error:', error);
