@@ -1,15 +1,31 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import Login from '../../../../pages/User/Login';
 import ChatBot from '../../../../pages/User/ChatBot';
+import AccountApi from '../../../../Api/Account/AccountApi';
+import { v4 as uuid4 } from 'uuid';
 
 function Header() {
 
     const [showLogin, setShowLogin] = useState(false);
     const handleLogin = () => {
         setShowLogin(true);
+    };
+    const [uuid, setUuid] = useState(() => {
+        const savedUuid = localStorage.getItem('session_id');
+        if (savedUuid) return savedUuid;
+        const newUuid = uuid4();
+        localStorage.setItem('session_id', newUuid);
+        return newUuid;
+    });
 
+    const handleLogout = async () => {
+        try {
+            const res = await AccountApi.logout();
+            window.location.reload();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
     };
 
     const handleClose = () => {
@@ -18,6 +34,29 @@ function Header() {
     const [isHidden, setIsHidden] = useState(false);
     const [isFixed, setIsFixed] = useState(false);
     const [lastScrollY, setLastScrollY] = useState(0);
+
+    const [userData, setUserData] = useState({});
+    useEffect(() => {
+        const getUser = async () => {
+            try {
+                const res = await AccountApi.info();
+                console.log(res);
+                setUserData(res);
+                setUuid(res.userId)
+            } catch (error) {
+                console.error("Failed to get user info:", error);
+                // If unauthorized or cookie is invalid, clear it
+                if (error.response?.status === 401) {
+                    // localStorage.removeItem('cookie');
+                    setUserData(null);
+                }
+            }
+        };
+        
+        // Only try to get user info if we have a cookie
+        
+        getUser();
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -98,12 +137,19 @@ function Header() {
                             <div className='col-md-1 user-container'>
                                 <i class="fas fa-user" style={{ fontSize: '20px', color: '#666666D9' }}></i>
                                 <div className='user-form text-center'>
-                                    <p className='m-0 ' style={{ fontSize: '18px' }}>
-                                        <span>Xin chào</span>
-                                        <span style={{ marginLeft: '4px' }}>Ly</span>
-                                    </p>
-                                    <p onClick={handleLogin}>Đăng nhập</p>
-                                    <p>Đăng xuất</p>
+                                    {
+                                        userData && userData.username ? (
+                                            <p className='m-0 ' style={{ fontSize: '18px' }}>
+                                                <span>Xin chào</span>
+                                                <span style={{ marginLeft: '4px' }}>{userData.username}</span>
+                                                <p onClick={handleLogout}>Đăng xuất</p>
+                                            </p>
+                                        ) : (
+                                            <p className='m-0 ' style={{ fontSize: '18px' }}>
+                                                <span onClick={handleLogin}>Đăng nhập</span>
+                                            </p>
+                                        )
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -114,4 +160,4 @@ function Header() {
     )
 }
 
-export default Header
+export default Header;
