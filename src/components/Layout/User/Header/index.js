@@ -40,7 +40,6 @@ function Header() {
         const getUser = async () => {
             try {
                 const res = await AccountApi.info();
-                console.log(res);
                 setUserData(res);
                 setUuid(res.userId)
             } catch (error) {

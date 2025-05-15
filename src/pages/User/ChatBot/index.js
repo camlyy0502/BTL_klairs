@@ -1,9 +1,31 @@
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./chatbot.css";
 import ChatBotApi from "../../../Api/ChatBot/ChatBotApi";
 import { v4 as uuid4 } from 'uuid';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import AccountApi from "../../../Api/Account/AccountApi";
 
 export default function ChatBot() {
+    const [userData, setUserData] = useState({});
+    useEffect(() => {
+        const getUser = async () => {
+            try {
+                const res = await AccountApi.info();
+                setUserData(res);
+                setUuid(res.userId)
+                setUsername(res.username);
+            } catch (error) {
+                console.error("Failed to get user info:", error);
+                // If unauthorized or cookie is invalid, clear it
+                if (error.response?.status === 401) {
+                    setUserData(null);
+                }
+            }
+        };
+        getUser();
+    }, []);
+
     const [uuid, setUuid] = useState(() => {
         const savedUuid = localStorage.getItem('session_id');
         if (savedUuid) return savedUuid;
@@ -19,6 +41,54 @@ export default function ChatBot() {
     const [input, setInput] = useState("");
     const [replyMessage, setReplyMessage] = useState(null);
     const chatRef = useRef(null);
+
+    const [username, setUsername] = useState('');
+    const [chat, setChat] = useState([]);
+    const [connected, setConnected] = useState(false);
+
+    const stompClientRef = useRef(null);
+
+    const connect = () => {
+        const socket = new SockJS(process.env.REACT_APP_API + '/ws');
+        const stompClient = new Client({
+        webSocketFactory: () => socket,
+        onConnect: () => {
+            stompClient.subscribe('/user/queue/messages', (msg) => {
+                console.log('Received message:', msg);
+            const payload = JSON.parse(msg.body);
+            console.log('Payload:', payload);
+            setChat((prev) => [...prev, { from: payload.sender, text: payload.content }]);
+            });
+
+            setConnected(true);
+        },
+        debug: (str) => console.log(str, connected),
+        });
+
+        stompClient.activate();
+        stompClientRef.current = stompClient;
+    };
+    const sendMessageWS = () => {
+        const stompClient = stompClientRef.current;
+        if (!stompClient || !connected) {
+            console.warn('STOMP client is not connected yet');
+            return;
+        }
+
+        const payload = {
+            sender: username,
+            recipient: 'admin@gmail.com',
+            message: input,
+        };
+
+        stompClient.publish({
+            destination: '/app/chat',
+            body: JSON.stringify(payload),
+        });
+
+        setChat((prev) => [...prev, { from: 'You', text: input }]);
+        setInput('');
+    };
 
     // useEffect(() => {
     //     const listMessage = async () => {
@@ -57,8 +127,16 @@ export default function ChatBot() {
     return (
         <div>
             <div className="zalo-bt">
-                <i className="fas fa-message" style={{ color: '#fff' }}
-                    onClick={() => setShowNotification(!showNotification)}></i>
+                <i 
+                    className="fas fa-message" 
+                    style={{ color: '#fff' }}
+                    onClick={() => {
+                        setShowNotification(!showNotification);
+                        if (!connected) {
+                            connect();
+                        }
+                    }}
+                ></i>
                 {showNotification && (
                     <div className="chat-boxu">
                         <div className="chat-headeru">
@@ -86,7 +164,6 @@ export default function ChatBot() {
                             </div>
                         )}
                         <div className="chat-footeru">
-                            {/* <i className="fas fa-list" style={{ marginRight: '8px' }}></i> */}
                             <input
                                 type="text" 
                                 className="chat-inputu"
@@ -95,11 +172,11 @@ export default function ChatBot() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyPress={(e) => {
                                     if (e.key === 'Enter' && input.trim() !== "") {
-                                        sendMessage();
+                                        sendMessageWS();
                                     }
                                 }}
                             />
-                            <i className="fas fa-paper-plane icon send-btnu" onClick={sendMessage}></i>
+                            <i className="fas fa-paper-plane icon send-btnu" disabled={!input} onClick={sendMessageWS}></i>
                         </div>
                     </div>
                 )}
