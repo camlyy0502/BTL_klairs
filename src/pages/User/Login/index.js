@@ -49,7 +49,7 @@ const Login = ({ isVisible, onClose }) => {
         setError("");
         
         try {
-            const response = await AccountApi.register(signUpData);
+            await AccountApi.register(signUpData);
             setRightPanelActive(false);
         } catch (error) {
             setError(error.response?.data?.message || "Registration failed. Please try again.");

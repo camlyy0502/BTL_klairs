@@ -37,6 +37,15 @@ const AccountApi = {
       throw error;
     }
   },
+  chatHistoty: async () => {
+    try {
+      const response = await axiosClient.get('/api/v1/chat/history');
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
 };
 
 export default AccountApi;

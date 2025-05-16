@@ -1,19 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import "./chatbot.css";
-import ChatBotApi from "../../../Api/ChatBot/ChatBotApi";
-import { v4 as uuid4 } from 'uuid';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import AccountApi from "../../../Api/Account/AccountApi";
 
 export default function ChatBot() {
     const [userData, setUserData] = useState({});
+    
     useEffect(() => {
         const getUser = async () => {
             try {
                 const res = await AccountApi.info();
                 setUserData(res);
-                setUuid(res.userId)
                 setUsername(res.username);
             } catch (error) {
                 console.error("Failed to get user info:", error);
@@ -26,24 +24,32 @@ export default function ChatBot() {
         getUser();
     }, []);
 
-    const [uuid, setUuid] = useState(() => {
-        const savedUuid = localStorage.getItem('session_id');
-        if (savedUuid) return savedUuid;
-        const newUuid = uuid4();
-        localStorage.setItem('session_id', newUuid);
-        return newUuid;
-    });
     const [showNotification, setShowNotification] = useState(false);
     const [messages, setMessages] = useState([
-        { id: 1, text: "Shop Klairs xin chào. Bạn đang tìm sản phẩm nào ạ?", sender: "system", replyTo: null },
-        { id: 2, text: "leu leuuuuuuuuuuuuuuu", sender: "user", replyTo: null },
+        // { id: 1, text: "Shop Klairs xin chào. Bạn đang tìm sản phẩm nào ạ?", sender: "system", replyTo: null },
     ]);
+
     const [input, setInput] = useState("");
     const [replyMessage, setReplyMessage] = useState(null);
     const chatRef = useRef(null);
 
+    useEffect(() => {
+        const getChatHisoty = async () => {
+            try {
+                const res = await AccountApi.chatHistoty();
+                console.log("Chat history:", res);
+                setMessages(res);
+            } catch (error) {
+                console.error("Failed to get user info:", error);
+                // If unauthorized or cookie is invalid, clear it
+                if (error.response?.status === 401) {
+                    setUserData(null);
+                }
+            }
+        };
+        getChatHisoty();
+    }, []);
     const [username, setUsername] = useState('');
-    const [chat, setChat] = useState([]);
     const [connected, setConnected] = useState(false);
 
     const stompClientRef = useRef(null);
@@ -53,20 +59,21 @@ export default function ChatBot() {
         const stompClient = new Client({
         webSocketFactory: () => socket,
         onConnect: () => {
-            stompClient.subscribe('/user/queue/messages', (msg) => {
-                console.log('Received message:', msg);
-            const payload = JSON.parse(msg.body);
-            console.log('Payload:', payload);
-            setChat((prev) => [...prev, { from: payload.sender, text: payload.content }]);
+            console.log('Connected to WebSocket');
+            stompClient.subscribe(`/user/${username}/queue/messages`, (msg) => {
+                const payload = JSON.parse(msg.body);
+                console.log('Payload:', payload);
+                setMessages((prev) => [...prev, { id: prev.length + 1, message: payload.message, sender: payload.sender }]);
+                setInput('');
             });
-
+            
             setConnected(true);
         },
         debug: (str) => console.log(str, connected),
         });
 
-        stompClient.activate();
         stompClientRef.current = stompClient;
+        stompClient.activate();
     };
     const sendMessageWS = () => {
         const stompClient = stompClientRef.current;
@@ -86,22 +93,9 @@ export default function ChatBot() {
             body: JSON.stringify(payload),
         });
 
-        setChat((prev) => [...prev, { from: 'You', text: input }]);
         setInput('');
     };
 
-    // useEffect(() => {
-    //     const listMessage = async () => {
-    //         try {
-    //             const response = await ChatBotApi.getChat({})
-    //             setMessages(response.data);
-    //         } catch (error) {
-    //             console.error("Error fetching message:", error);
-    //         }
-    //     };
-    //     listMessage();
-    // }
-    // )
 
 
     useEffect(() => {
@@ -109,20 +103,6 @@ export default function ChatBot() {
             chatRef.current.scrollTop = chatRef.current.scrollHeight;
         }
     }, [messages]);
-
-    const sendMessage = () => {
-        if (input.trim() !== "") {
-            const newMessage = {
-                id: messages.length + 1,
-                text: input,
-                sender: "user",
-                replyTo: replyMessage,
-            };
-            setMessages([...messages, newMessage]);
-            setInput("");
-            setReplyMessage(null);
-        }
-    };
 
     return (
         <div>
@@ -148,13 +128,13 @@ export default function ChatBot() {
                         </div>
                         <div className="chat-bodyu" ref={chatRef} style={{ overflowY: "auto", maxHeight: "400px" }}>
                             {messages.map((msg) => (
-                                <div key={msg.id} className={`messageu message ${msg.sender} ${msg.sender === "user" ? "theirs" : "mine"}`} >
+                                <div key={msg.id} className={`messageu message ${msg.sender} ${msg.sender === userData.username ? "theirs" : "mine"}`} >
                                 {msg.replyTo && (
                                     <div className="reply-boxu">
                                         <span className="reply-textu">{msg.replyTo}</span>
                                     </div>
                                 )}
-                                {msg.text}
+                                {msg.message}
                                 </div>
                             ))}
                         </div>

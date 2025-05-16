@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { publicRoutes } from './routes';
 import User from './components/Layout/User';
+import ProtectedRoute from './routes/ProtectedRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 import ScrollToTop from './ScrollToTop';
@@ -21,10 +22,15 @@ function App() {
             } else if (route.layout === null) {
               Layout = Fragment;
             }
-            return <Route key={index} path={route.path} element={
+            // Wrap admin routes with ProtectedRoute
+            const isAdminRoute = route.path.startsWith('/Admin');
+            const element = (
               <Layout>
                 <Page />
               </Layout>
+            );
+            return <Route key={index} path={route.path} element={
+              isAdminRoute ? <ProtectedRoute>{element}</ProtectedRoute> : element
             } />;
           })
         }
