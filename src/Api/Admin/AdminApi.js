@@ -12,6 +12,33 @@ const AdminApi = {
       throw error;
     }
   },
+  listAccount: async () => {
+    try {
+      const response = await axiosClient.get('/api/admin/accounts');
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+  listRoles: async () => {
+    try {
+      const response = await axiosClient.get('/api/admin/roles');
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+  listUserHaveChat: async () => {
+    try {
+      const response = await axiosClient.get('/api/admin/accounts/with-chat-history');
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
 };
 
 export default AdminApi;

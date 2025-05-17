@@ -8,9 +8,16 @@ import { v4 as uuid4 } from 'uuid';
 function Header() {
 
     const [showLogin, setShowLogin] = useState(false);
+    const [isRegister, setIsRegister] = useState(false);
     const handleLogin = () => {
         setShowLogin(true);
+        setIsRegister(false);
     };
+    const handleRegister = () => {
+        setShowLogin(true);
+        setIsRegister(true);
+    };
+
     const [uuid, setUuid] = useState(() => {
         const savedUuid = localStorage.getItem('session_id');
         if (savedUuid) return savedUuid;
@@ -87,7 +94,7 @@ function Header() {
     return (
         <>
             <ChatBot />
-            <Login isVisible={showLogin} onClose={handleClose} />
+            <Login isVisible={showLogin} onClose={handleClose} isRegister={isRegister} />
             <div className={`container-fluid p-0 header ${isHidden ? "hidden" : ""} ${isFixed ? "fixed" : ""}`}>
                 <div className='container h-100'>
                     <div className='custom-container h-100'>
@@ -146,6 +153,8 @@ function Header() {
                                         ) : (
                                             <p className='m-0 ' style={{ fontSize: '18px' }}>
                                                 <span onClick={handleLogin}>Đăng nhập</span>
+                                                <p></p>
+                                                <span onClick={handleRegister}>Đăng ký</span>
                                             </p>
                                         )
                                     }

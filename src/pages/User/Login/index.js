@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import AccountApi from "../../../Api/Account/AccountApi";
 
-const Login = ({ isVisible, onClose }) => {
-    const [isRightPanelActive, setRightPanelActive] = useState(false);
+const Login = ({ isVisible, onClose, isRegister }) => {
+    const [isRightPanelActive, setRightPanelActive] = useState(!!isRegister);
     const [isSubmit, setIsSubmit] = useState(false);
     const [loginData, setLoginData] = useState({
         email: "",
@@ -57,6 +57,11 @@ const Login = ({ isVisible, onClose }) => {
             setIsSubmit(false);
         }
     };
+
+    // Khi prop isRegister thay đổi, cập nhật panel
+    React.useEffect(() => {
+        setRightPanelActive(!!isRegister);
+    }, [isRegister]);
 
     if (!isVisible) {
         return null;
