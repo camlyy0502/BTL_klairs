@@ -21,8 +21,14 @@ function Home() {
         labels: ["Jan", "Feb", "Mar", "Apr", "May"],
         datasets: [
             {
+                label: "Orders",
+                data: [0, 10, 20, 10, 10, 30],
+                borderColor: "red",
+                backgroundColor: "rgba(255, 0, 0, 0.5)",
+            },
+            {
                 label: "Sales",
-                data: [10, 20, 30, 40, 50],
+                data: [0, 11, 15, 30, 40, 50],
                 borderColor: "blue",
                 backgroundColor: "rgba(54, 162, 235, 0.5)",
             },
