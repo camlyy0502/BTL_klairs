@@ -8,6 +8,8 @@ function Sidebar() {
         { to: '/Admin/Account', icon: 'fas fa-user me-2', label: 'Tài khoản' },
         { to: '/Admin/Category', icon: 'fas fa-user me-2', label: 'Danh mục' },
         { to: '/Admin/Chat', icon: 'fas fa-user me-2', label: 'Quản lý tin nhắn' },
+        { to: '/admin/products', icon: 'fas fa-box me-2', label: 'Quản lý sản phẩm' }, // Thêm mục quản lý sản phẩm
+        { to: '/admin/orders', icon: 'fas fa-shopping-cart me-2', label: 'Quản lý đơn hàng' }, // Thêm mục quản lý đơn hàng
     ];
 
     return (

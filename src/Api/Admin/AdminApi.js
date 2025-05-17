@@ -21,6 +21,15 @@ const AdminApi = {
       throw error;
     }
   },
+  getAccountById: async (id) => {
+    try {
+      const response = await axiosClient.get(`/api/admin/accounts/${id}`);
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
   listRoles: async () => {
     try {
       const response = await axiosClient.get('/api/admin/roles');

@@ -1,13 +1,15 @@
 import { Fragment } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { publicRoutes } from './routes';
 import User from './components/Layout/User';
 import ProtectedRoute from './routes/ProtectedRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 import ScrollToTop from './ScrollToTop';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ProductManager from './pages/Admin/ProductManager';
+import OrderManager from './pages/Admin/OrderManager';
 function App() {
 
 
@@ -37,6 +39,8 @@ function App() {
             } />;
           })
         }
+        <Route path="/admin/products" element={<ProtectedRoute><ProductManager /></ProtectedRoute>} />
+        <Route path="/admin/orders" element={<ProtectedRoute><OrderManager /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
