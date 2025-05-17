@@ -13,6 +13,9 @@ import HomeAd from "../pages/Admin/Home";
 import Category from "../pages/Admin/Category";
 import Account from "../pages/Admin/Account/Account";
 import Chat from "../pages/Admin/Chat";
+import AddressPage from '../pages/User/Account/AddressPage';
+import OrderPage from '../pages/User/OrderPage';
+import OrderDetailPage from '../pages/User/OrderDetailPage';
 
 
 
@@ -30,13 +33,13 @@ const publicRoutes = [
         path: '/products/:productId', component: ProductDetails
     },
     {
-        path: '/Cart', component: Cart
+        path: '/cart', component: Cart
     },
     {
-        path: '/Pay', component: Pay
+        path: '/pay', component: Pay
     },
     {
-        path: '/PayDetails', component: PayDetails
+        path: '/payDetails', component: PayDetails
     },
     {
         path: '/contact', component: Contact
@@ -45,17 +48,26 @@ const publicRoutes = [
         path: '/introduce', component: Introduce
     },
     {
-        path: '/Admin', component: HomeAd, layout: Admin
+        path: '/admin', component: HomeAd, layout: Admin
     },
     {
-        path: '/Admin/Category', component: Category, layout: Admin
+        path: '/admin/category', component: Category, layout: Admin
     },
     {
-        path: '/Admin/Account', component: Account, layout: Admin
+        path: '/admin/account', component: Account, layout: Admin
     },
     {
-        path: '/Admin/Chat', component: Chat, layout: Admin
+        path: '/admin/chat', component: Chat, layout: Admin
     },
+    {
+        path: '/account/addresses', component: AddressPage
+    },
+    {
+        path: '/orders', component: OrderPage
+    },
+    {
+        path: '/orders/:id', component: OrderDetailPage
+    }
 
 ];
 

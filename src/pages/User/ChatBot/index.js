@@ -3,6 +3,7 @@ import "./chatbot.css";
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import AccountApi from "../../../Api/Account/AccountApi";
+import CartApi from '../../../Api/Card/CartApi';
 
 export default function ChatBot() {
     const [userData, setUserData] = useState({});
@@ -25,9 +26,7 @@ export default function ChatBot() {
     }, []);
 
     const [showNotification, setShowNotification] = useState(false);
-    const [messages, setMessages] = useState([
-        // { id: 1, text: "Shop Klairs xin chào. Bạn đang tìm sản phẩm nào ạ?", sender: "system", replyTo: null },
-    ]);
+    const [messages, setMessages] = useState([]);
 
     const [input, setInput] = useState("");
     const [replyMessage, setReplyMessage] = useState(null);
@@ -97,7 +96,45 @@ export default function ChatBot() {
         setInput('');
     };
 
+    const handleAddToCart = async (productId) => {
+        // Update localStorage with the specified format
+        const cartKey = 'klairs_cart';
+        let cart = { address_id: '', orders: [] };
+        try {
+            const stored = localStorage.getItem(cartKey);
+            if (stored) {
+                cart = JSON.parse(stored);
+            }
+            // Check if product already exists in cart
+            const existing = cart.orders.find(item => item.product_id === productId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.orders.push({ product_id: productId, quantity: 1 });
+            }
+            localStorage.setItem(cartKey, JSON.stringify(cart));
+            setMessages((prev) => [
+                ...prev,
+                { id: prev.length + 1, message: `Đã thêm sản phẩm ${productId} vào giỏ hàng của bạn.`, sender: 'system' }
+            ]);
+        } catch (error) {
+            setMessages((prev) => [
+                ...prev,
+                { id: prev.length + 1, message: `Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.`, sender: 'system' }
+            ]);
+        }
+    };
 
+    const handleUserInput = async (inputText) => {
+        const addToCartMatch = inputText.match(/^add (\d+) to cart$/i);
+        if (addToCartMatch) {
+            const productId = addToCartMatch[1];
+            await handleAddToCart(productId);
+            setInput("");
+            return;
+        }
+        sendMessageWS();
+    };
 
     useEffect(() => {
         if (chatRef.current) {
@@ -157,13 +194,13 @@ export default function ChatBot() {
                                 placeholder="Aa"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={(e) => {
+                                onKeyPress={async (e) => {
                                     if (e.key === 'Enter' && input.trim() !== "") {
-                                        sendMessageWS();
+                                        await handleUserInput(input);
                                     }
                                 }}
                             />
-                            <i className="fas fa-paper-plane icon send-btnu" disabled={!input} onClick={sendMessageWS}></i>
+                            <i className="fas fa-paper-plane icon send-btnu" disabled={!input} onClick={async () => { if(input) await handleUserInput(input); }}></i>
                         </div>
                     </div>
                 )}
