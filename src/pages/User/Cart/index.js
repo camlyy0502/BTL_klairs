@@ -1,15 +1,67 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
+import DashboardApi from '../../../Api/Product/DashboardApi';
+import { toast } from 'react-toastify';
 
 function Cart() {
     const navigate = useNavigate();
+    const [cart, setCart] = useState({ address_id: '', orders: [] });
+
+    useEffect(() => {
+        const cartKey = 'klairs_cart';
+        const stored = localStorage.getItem(cartKey);
+        if (stored) {
+            setCart(JSON.parse(stored));
+        }
+        // Listen for cart changes (optional, for real-time update)
+        const handleCartUpdated = () => {
+            const updated = localStorage.getItem(cartKey);
+            setCart(updated ? JSON.parse(updated) : { address_id: '', orders: [] });
+        };
+        window.addEventListener('cart-updated', handleCartUpdated);
+        return () => window.removeEventListener('cart-updated', handleCartUpdated);
+    }, []);
 
     const handleToPay = () => {
+        if (!cart.orders || cart.orders.length === 0) {
+            toast.warning('Giỏ hàng của bạn đang trống!');
+            return;
+        }
         navigate('/Pay'); // Chuyển đến trang Pay
     };
     const handleToProduct = () => {
-        navigate('/Product'); // Chuyển đến trang Pay
+        navigate('/products'); // Chuyển đến trang Product
     };
+
+    // Calculate total
+    const total = cart.orders.reduce((sum, item) => {
+        const price = item.sale > 0 ? item.product_price_sale : item.product_price;
+        return sum + price * item.quantity;
+    }, 0);
+
+    const handleChangeQuantity = async (productId, newQuantity) => {
+        try {
+            const product = await DashboardApi.getDetailProduct(productId);
+            const productQuantity = product.product.quantity ?? (product.product && product.product.quantity);
+            if (!product || typeof productQuantity !== 'number') {
+                toast.error('Không thể kiểm tra số lượng sản phẩm.');
+                return;
+            }
+            if (newQuantity > productQuantity) {
+                toast.error('Số lượng sản phẩm trong kho không đủ!');
+                return;
+            }
+            const cartKey = 'klairs_cart';
+            const newOrders = cart.orders.map(o => o.product_id === productId ? { ...o, quantity: newQuantity } : o);
+            const newCart = { ...cart, orders: newOrders };
+            setCart(newCart);
+            localStorage.setItem(cartKey, JSON.stringify(newCart));
+            window.dispatchEvent(new Event('cart-updated'));
+        } catch (error) {
+            toast.error('Có lỗi khi cập nhật số lượng!');
+        }
+    };
+
     return (
         <div className='container cart mb-5 ' style={{ minHeight: '300px' }}>
             <div className='custom-container' style={{ borderTop: '1px solid #ddd', paddingTop: '16px' }}>
@@ -33,39 +85,65 @@ function Cart() {
                                     <h6 style={{ textAlign: 'right' }}>TẠM TÍNH</h6>
                                 </div>
                             </div>
-                            <div className='row mt-3 align-items-center' style={{ borderBottom: '1px solid #ddd', padding: '0 0 8px 0' }}>
-                                <div className='col-md-2 p-0 d-flex align-items-center'>
-                                    <button style={{ width: '25px', height: '25px', borderRadius: '50%', border: '1px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>X</button>
-                                    <img style={{ width: '75px', height: '75px' }} src='https://klairsvietnam.vn/wp-content/uploads/2020/07/kem-nen-trang-diem-klairs-600x600.jpg' />
+                            {cart.orders.length === 0 ? (
+                                <div className='row mt-3 align-items-center' style={{ borderBottom: '1px solid #ddd', padding: '0 0 8px 0' }}>
+                                    <div className='col-12 text-center'>Chưa có sản phẩm trong giỏ hàng!</div>
                                 </div>
-                                <div className='col-md-4'>
-                                    Kem nền trang điểm Klairs Illuminating Supple Blemish Cream
-                                </div>
-                                <div className='col-md-2'>
-                                    <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                        <span>360.000</span>
-                                        <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
-                                            đ
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className='col-md-2'>
-                                    <div className='d-flex align-items-center'>
-                                        <button style={{ border: "1px solid #ddd", width: '20px', height: '33px' }}>-</button>
-                                        <input style={{ border: "1px solid #ddd", width: '40px', height: '33px' }} type='number' min='1' value='1' />
-                                        <button style={{ border: "1px solid #ddd", width: '20px', height: '33px' }}>+</button>
-
-                                    </div>
-                                </div>
-                                <div className='col-md-2 p-0' style={{ textAlign: 'right' }}>
-                                    <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                        <span>360.000</span>
-                                        <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
-                                            đ
-                                        </span>
-                                    </span>
-                                </div>
-                            </div>
+                            ) : (
+                                cart.orders.map((item, idx) => {
+                                    const price = item.sale > 0 ? item.product_price_sale : item.product_price;
+                                    const total = price * item.quantity;
+                                    return (
+                                        <div className='row mt-3 align-items-center' style={{ borderBottom: '1px solid #ddd', padding: '0 0 8px 0' }} key={item.product_id}>
+                                            <div className='col-md-2 p-0 d-flex align-items-center'>
+                                                <button style={{ width: '25px', height: '25px', borderRadius: '50%', border: '1px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    onClick={() => {
+                                                        const cartKey = 'klairs_cart';
+                                                        const newOrders = cart.orders.filter(o => o.product_id !== item.product_id);
+                                                        const newCart = { ...cart, orders: newOrders };
+                                                        setCart(newCart);
+                                                        localStorage.setItem(cartKey, JSON.stringify(newCart));
+                                                        window.dispatchEvent(new Event('cart-updated'));
+                                                    }}
+                                                >X</button>
+                                                <img style={{ width: '75px', height: '75px', marginLeft: 8 }} src={item.product_img} alt={item.product_name} />
+                                            </div>
+                                            <div className='col-md-4'>
+                                                {item.product_name}
+                                            </div>
+                                            <div className='col-md-2'>
+                                                <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
+                                                    <span>{price.toLocaleString()}</span>
+                                                    <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
+                                                        đ
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className='col-md-2'>
+                                                <div className='d-flex align-items-center'>
+                                                    <button style={{ border: "1px solid #ddd", width: '20px', height: '33px' }}
+                                                        onClick={() => {
+                                                            if (item.quantity > 1) handleChangeQuantity(item.product_id, item.quantity - 1);
+                                                        }}
+                                                    >-</button>
+                                                    <input style={{ border: "1px solid #ddd", width: '40px', height: '33px', textAlign: 'center' }} type='number' min='1' value={item.quantity} readOnly />
+                                                    <button style={{ border: "1px solid #ddd", width: '20px', height: '33px' }}
+                                                        onClick={() => handleChangeQuantity(item.product_id, item.quantity + 1)}
+                                                    >+</button>
+                                                </div>
+                                            </div>
+                                            <div className='col-md-2 p-0' style={{ textAlign: 'right' }}>
+                                                <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
+                                                    <span>{total.toLocaleString()}</span>
+                                                    <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
+                                                        đ
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            )}
                         </div>
                         <button className='cart-bt_continue' onClick={handleToProduct}>  TIẾP TỤC XEM SẢN PHẨM</button>
 
@@ -78,7 +156,7 @@ function Cart() {
                             <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                                 <p style={{ fontWeight: '500' }}>Tạm tính</p>
                                 <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                    <span>360.000</span>
+                                    <span>{total.toLocaleString()}</span>
                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                         đ
                                     </span>
@@ -91,7 +169,7 @@ function Cart() {
                             <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                                 <p style={{ fontWeight: '500' }}>Tổng</p>
                                 <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                    <span>360.000</span>
+                                    <span>{total.toLocaleString()}</span>
                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                         đ
                                     </span>

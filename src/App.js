@@ -6,12 +6,15 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 import ScrollToTop from './ScrollToTop';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 function App() {
 
 
   return (
     <Router>
       <ScrollToTop></ScrollToTop>
+      <ToastContainer position="top-right" autoClose={2000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <Routes>
         {
           publicRoutes.map((route, index) => {
