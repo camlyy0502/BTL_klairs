@@ -1,18 +1,14 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 function Sidebar() {
-    useEffect(() => {
-        const slides = document.querySelectorAll('.slide');
-        slides.forEach((slide) => {
-            slide.addEventListener('click', () => {
-                // Loại bỏ class active khỏi tất cả slide
-                slides.forEach((s) => s.classList.remove('active'));
-                // Thêm class active vào slide được chọn
-                slide.classList.add('active');
-            });
-        });
-    }, []);
+    const location = useLocation();
+    const navItems = [
+        { to: '/Admin', icon: 'fas fa-home me-2', label: 'Dashboard' },
+        { to: '/Admin/Account', icon: 'fas fa-user me-2', label: 'Tài khoản' },
+        { to: '/Admin/Category', icon: 'fas fa-user me-2', label: 'Danh mục' },
+        { to: '/Admin/Chat', icon: 'fas fa-user me-2', label: 'Quản lý tin nhắn' },
+    ];
 
     return (
         <div className="col-md-2 slider" style={{ backgroundColor: '#fff', minHeight: '100vh' }}>
@@ -22,15 +18,17 @@ function Sidebar() {
             </div>
             <h6 className="mt-4" style={{ color: '#62677399' }}>NAVIGATION</h6>
             <ul className='navigation m-0 p-0'>
-
-                <li className='slide active' style={{ padding: '8px 20px' }}>
-                    <Link to='/Admin'><i class="fas fa-home me-2"></i> Dashboard </Link>
-                </li>
-                <li className='slide' style={{ padding: '8px 20px' }}><Link to='/Admin/Account'> <i class="fas fa-user me-2"></i> Tài khoản</Link> </li>
-                <li className='slide' style={{ padding: '8px 20px' }}><Link to='/Admin/Category'><i class="fas fa-user me-2"></i>Danh mục</Link> </li>
-                <li className='slide' style={{ padding: '8px 20px' }}><Link to='/Admin/Chat'><i class="fas fa-user me-2"></i>Quản lý tin nhắn</Link> </li>
-
-
+                {navItems.map((item, idx) => (
+                    <li
+                        key={item.to}
+                        className={`slide${location.pathname === item.to ? ' active' : ''}`}
+                        style={{ padding: '8px 20px' }}
+                    >
+                        <Link to={item.to} style={{ display: 'block', width: '100%', color: 'inherit', textDecoration: 'none' }}>
+                            <i className={item.icon}></i> {item.label}
+                        </Link>
+                    </li>
+                ))}
             </ul>
             <div>
 

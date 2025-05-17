@@ -23,12 +23,30 @@ function Chat() {
         };
         getUser();
     }, []);
-    const users = [
-        { id: 1, email: "HAHAHA@gmail.com", name: "HAHAHA", avatar: 'https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-7.jpeg' },
-        { id: 2, email: "camlynk2k3@gmail.com", name: "Cẩm Ly", avatar: 'https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-11.jpeg' },
-        { id: 3, email: "MoriMori@gmail.com", name: "MoriMori", avatar: 'https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-11.jpeg' },
-        { id: 4, email: "test2@gmail.com", name: "test2", avatar: 'https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-11.jpeg' }
-    ];
+
+    const [users, setUserHaveChat] = useState([]);
+    const [userList, setUserList] = useState([]);
+
+    useEffect(() => {
+        const getUserHaveChat = async () => {
+            try {
+                const res = await AdminApi.listUserHaveChat();
+                setUserHaveChat(res);
+                setUserList(res); // set userList from users fetched
+            } catch (error) {
+                console.error("Failed to get user info:", error);
+            }
+        };
+        getUserHaveChat();
+        const interval = setInterval(getUserHaveChat, 1000); // fetch every 5 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    // Keep userList in sync with users if users change
+    useEffect(() => {
+        setUserList(users);
+    }, [users]);
+
     const [messagesMap, setMessagesMap] = useState({}); // { [userEmail]: [messages] }
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -90,7 +108,7 @@ function Chat() {
 
 
     const [unreadCounts, setUnreadCounts] = useState({});
-    const [userList, setUserList] = useState(users);
+    const subscribedUsersRef = useRef({});
 
     // Global WebSocket connection for all users
     useEffect(() => {
@@ -98,45 +116,56 @@ function Chat() {
         const stompClientAdmin = new Client({
             webSocketFactory: () => socketAdmin,
             onConnect: () => {
-                console.log('Connected to WebSocket (admin global)');
-                // Subscribe to all users' queues
-                users.forEach(user => {
-                    stompClientAdmin.subscribe(`/user/${user.email}/queue/messages`, (msg) => {
-                        const payload = JSON.parse(msg.body);
-                        console.log('Payload:', payload);
-                        // Ignore messages sent by the admin themselves to prevent duplicates
-                        if (payload.sender === userData.username) return;
-                        // Update messagesMap for this user
-                        setMessagesMap(prev => {
-                            const prevMsgs = prev[user.email] || [];
-                            return {
-                                ...prev,
-                                [user.email]: [...prevMsgs, { id: prevMsgs.length + 1, message: payload.message, sender: payload.sender }]
-                            };
-                        });
-                        // If not currently selected user, increment unread count and move to top
-                        if (user.email !== username) {
-                            setUnreadCounts(prev => ({
-                                ...prev,
-                                [user.email]: (prev[user.email] || 0) + 1
-                            }));
-                        }
-                        setUserList(prevList => {
-                            const idx = prevList.findIndex(u => u.email === user.email);
-                            if (idx > 0) {
-                                const updated = [...prevList];
-                                const [moved] = updated.splice(idx, 1);
-                                updated.unshift(moved);
-                                return updated;
+                // Subscribe to all users in userList, including new ones
+                userList.forEach(user => {
+                    if (!subscribedUsersRef.current[user.email]) {
+                        stompClientAdmin.subscribe(`/user/${user.email}/queue/messages`, async (msg) => {
+                            const payload = JSON.parse(msg.body);
+                            // Ignore messages sent by the admin themselves to prevent duplicates
+                            if (payload.sender === userData.username) return;
+                            // If the sender is not in userList, reload userList from API
+                            if (!userList.some(u => u.email === payload.sender)) {
+                                try {
+                                    const res = await AdminApi.listUserHaveChat();
+                                    setUserHaveChat(res);
+                                    setUserList(res);
+                                } catch (error) {
+                                    console.error("Failed to reload user list:", error);
+                                }
                             }
-                            return prevList;
+                            // Update messagesMap for this user
+                            setMessagesMap(prev => {
+                                const prevMsgs = prev[user.email] || [];
+                                return {
+                                    ...prev,
+                                    [user.email]: [...prevMsgs, { id: prevMsgs.length + 1, message: payload.message, sender: payload.sender }]
+                                };
+                            });
+                            // If not currently selected user, increment unread count and move to top
+                            if (user.email !== username) {
+                                setUnreadCounts(prev => ({
+                                    ...prev,
+                                    [user.email]: (prev[user.email] || 0) + 1
+                                }));
+                            }
+                            setUserList(prevList => {
+                                const idx = prevList.findIndex(u => u.email === user.email);
+                                if (idx > 0) {
+                                    const updated = [...prevList];
+                                    const [moved] = updated.splice(idx, 1);
+                                    updated.unshift(moved);
+                                    return updated;
+                                }
+                                return prevList;
+                            });
+                            // If currently selected user, reset unread (KHÔNG gọi setMessages ở đây)
+                            if (user.email === username) {
+                                setUnreadCounts(prev => ({ ...prev, [user.email]: 0 }));
+                                setInput('');
+                            }
                         });
-                        // If currently selected user, reset unread (KHÔNG gọi setMessages ở đây)
-                        if (user.email === username) {
-                            setUnreadCounts(prev => ({ ...prev, [user.email]: 0 }));
-                            setInput('');
-                        }
-                    });
+                        subscribedUsersRef.current[user.email] = true;
+                    }
                 });
             },
             debug: (str) => console.log(str),
@@ -145,8 +174,9 @@ function Chat() {
         stompClientAdmin.activate();
         return () => {
             stompClientAdmin.deactivate();
+            subscribedUsersRef.current = {};
         };
-    }, [users, username]);
+    }, [userList, username, userData.username]);
 
     // When selecting a user, show their messages
     const selectUser = (userId) => {
@@ -158,6 +188,17 @@ function Chat() {
     };
 
     const [selectedUser, setSelectedUser] = useState(null);
+
+    // Polling: fetch selected user's chat history every 1 seconds
+    useEffect(() => {
+        if (!selectedUser) return;
+        const user = userList.find(u => u.id === selectedUser);
+        if (!user) return;
+        const interval = setInterval(() => {
+            getChatHisoty(user.email);
+        }, 1000); // 1 seconds
+        return () => clearInterval(interval);
+    }, [selectedUser, userList]);
 
     // When a new message arrives for the selected user, update messages
     useEffect(() => {
@@ -187,8 +228,8 @@ function Chat() {
                                     selectUser(user.id);
                                     getChatHisoty(user.email);
                                 }}>
-                                <img src={user.avatar} alt="avatar" className="avatar" />
-                                <span className="user-name">{user.name}</span>
+                                <img src={user.avatar ? user.avatar : "https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-7.jpeg"} alt="avatar" className="avatar" />
+                                <span className="user-name">{user.email}</span>
                                 {unreadCounts[user.email] > 0 && (
                                     <span className="badge bg-danger ms-2">{unreadCounts[user.email]}</span>
                                 )}
@@ -199,8 +240,10 @@ function Chat() {
 
                 <div className="col-9 chat-section">
                     <div className="chat-header">
-                        <img src={selectedUser ? users.find((u) => u.id === selectedUser)?.avatar : "Chọn người để chat"} alt="avatar" className="avatar" />
-                        {selectedUser ? users.find((u) => u.id === selectedUser)?.name : "Chọn người để chat"}
+                        {selectedUser && (
+                            <img src={(users.find((u) => u.id === selectedUser)?.avatar) || "https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-7.jpeg"} alt="avatar" className="avatar" />
+                        )}
+                        {selectedUser ? users.find((u) => u.id === selectedUser)?.email : "Chọn người để chat"}
                     </div>
                     <div className="chat-body" ref={chatRef}>
                         {messages.map((msg, index) => (

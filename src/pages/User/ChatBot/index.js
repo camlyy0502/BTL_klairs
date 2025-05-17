@@ -37,7 +37,6 @@ export default function ChatBot() {
         const getChatHisoty = async () => {
             try {
                 const res = await AccountApi.chatHistoty();
-                console.log("Chat history:", res);
                 setMessages(res);
             } catch (error) {
                 console.error("Failed to get user info:", error);
@@ -48,6 +47,8 @@ export default function ChatBot() {
             }
         };
         getChatHisoty();
+        const interval = setInterval(getChatHisoty, 1000); // fetch every 5 seconds
+        return () => clearInterval(interval);
     }, []);
     const [username, setUsername] = useState('');
     const [connected, setConnected] = useState(false);
@@ -127,16 +128,22 @@ export default function ChatBot() {
                             </div>
                         </div>
                         <div className="chat-bodyu" ref={chatRef} style={{ overflowY: "auto", maxHeight: "400px" }}>
-                            {messages.map((msg) => (
-                                <div key={msg.id} className={`messageu message ${msg.sender} ${msg.sender === userData.username ? "theirs" : "mine"}`} >
-                                {msg.replyTo && (
-                                    <div className="reply-boxu">
-                                        <span className="reply-textu">{msg.replyTo}</span>
-                                    </div>
-                                )}
-                                {msg.message}
+                            {messages.length === 0 ? (
+                                <div className="messageu message system mine">
+                                    Shop Klairs xin chào. Bạn đang tìm sản phẩm nào ạ?
                                 </div>
-                            ))}
+                            ) : (
+                                messages.map((msg) => (
+                                    <div key={msg.id} className={`messageu message ${msg.sender} ${msg.sender === userData.username ? "theirs" : "mine"}`} >
+                                        {msg.replyTo && (
+                                            <div className="reply-boxu">
+                                                <span className="reply-textu">{msg.replyTo}</span>
+                                            </div>
+                                        )}
+                                        {msg.message}
+                                    </div>
+                                ))
+                            )}
                         </div>
                         {replyMessage && (
                             <div className="replying-tou">
