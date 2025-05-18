@@ -3,7 +3,6 @@ import "./chatbot.css";
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import AccountApi from "../../../Api/Account/AccountApi";
-import CartApi from '../../../Api/Card/CartApi';
 
 export default function ChatBot() {
     const [userData, setUserData] = useState({});
@@ -55,25 +54,60 @@ export default function ChatBot() {
     const stompClientRef = useRef(null);
 
     const connect = () => {
+        if (!username) return; // Không connect nếu chưa có username
+        if (connected) return; // Nếu đã kết nối thì không kết nối lại
         const socket = new SockJS(process.env.REACT_APP_API + '/ws');
         const stompClient = new Client({
         webSocketFactory: () => socket,
         onConnect: () => {
-            console.log('Connected to WebSocket');
-            stompClient.subscribe(`/user/${username}/queue/messages`, (msg) => {
-                const payload = JSON.parse(msg.body);
-                console.log('Payload:', payload);
-                setMessages((prev) => [...prev, { id: prev.length + 1, message: payload.message, sender: payload.sender }]);
-                setInput('');
-            });
-            
-            setConnected(true);
+            try {
+                stompClient.subscribe(`/user/${username}/queue/messages`, (msg) => {
+                    try {
+                        const payload = JSON.parse(msg.body);
+                        setMessages((prev) => {
+                            const newMsgs = [...prev, { id: prev.length + 1, message: payload.message, sender: payload.sender }];
+                            // Tự động cuộn khi có tin nhắn mới
+                            setTimeout(() => {
+                                if (chatRef.current) {
+                                    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                                }
+                            }, 0);
+                            return newMsgs;
+                        });
+                        setInput('');
+                    } catch (e) {
+                        // ignore parse error
+                    }
+                });
+                setConnected(true);
+                // Tự động cuộn khi vừa kết nối xong (hiện toàn bộ lịch sử)
+                setTimeout(() => {
+                    if (chatRef.current) {
+                        chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                    }
+                }, 0);
+            } catch (e) {
+                setConnected(false);
+            }
         },
-        debug: (str) => console.log(str, connected),
+        onStompError: (frame) => {
+            console.error('Broker reported error: ' + frame.headers['message']);
+            setConnected(false);
+        },
+        onWebSocketClose: () => {
+            setConnected(false);
+            setTimeout(() => {
+                if (!connected) connect();
+            }, 2000);
+        },
+        // debug: (str) => console.log(str, connected),
         });
-
         stompClientRef.current = stompClient;
-        stompClient.activate();
+        try {
+            stompClient.activate();
+        } catch (e) {
+            // ignore activate error
+        }
     };
     const sendMessageWS = () => {
         const stompClient = stompClientRef.current;
@@ -81,18 +115,20 @@ export default function ChatBot() {
             console.warn('STOMP client is not connected yet');
             return;
         }
-
+        if (!input) return;
         const payload = {
             sender: username,
             recipient: 'admin@gmail.com',
             message: input,
         };
-
-        stompClient.publish({
-            destination: '/app/chat',
-            body: JSON.stringify(payload),
-        });
-
+        try {
+            stompClient.publish({
+                destination: '/app/chat',
+                body: JSON.stringify(payload),
+            });
+        } catch (e) {
+            // ignore publish error
+        }
         setInput('');
     };
 

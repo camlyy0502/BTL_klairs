@@ -188,6 +188,8 @@ function Chat() {
     };
 
     const [selectedUser, setSelectedUser] = useState(null);
+    
+    const [selectedUserEmail, setSelectedUserEmail] = useState(null);
 
     // Polling: fetch selected user's chat history every 1 seconds
     useEffect(() => {
@@ -199,7 +201,7 @@ function Chat() {
         }, 1000); // 1 seconds
         return () => clearInterval(interval);
     }, [selectedUser, userList]);
-
+    
     // When a new message arrives for the selected user, update messages
     useEffect(() => {
         if (selectedUser) {
@@ -227,6 +229,7 @@ function Chat() {
                                 onClick={() => {
                                     selectUser(user.id);
                                     getChatHisoty(user.email);
+                                    setSelectedUserEmail(user.email);
                                 }}>
                                 <img src={user.avatar ? user.avatar : "https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-7.jpeg"} alt="avatar" className="avatar" />
                                 <span className="user-name">{user.email}</span>
@@ -247,7 +250,7 @@ function Chat() {
                     </div>
                     <div className="chat-body" ref={chatRef}>
                         {messages.map((msg, index) => (
-                            <div key={index}  className={`messageuadmin messageadmin ${msg.sender} ${msg.sender === userData.username ? "theirsadmin" : "mineadmin"}`} >
+                            <div key={index}  className={`messageuadmin messageadmin ${msg.sender} ${msg.sender === selectedUserEmail ? "mineadmin" : "theirsadmin"}`} >
                                 {msg.message}
                             </div>
                         ))}
