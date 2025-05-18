@@ -28,7 +28,7 @@ const AccountApi = {
       throw error;
     }
   },
-  info: async (data) => {
+  info: async () => {
     try {
       const response = await axiosClient.get('/api/v1/info');
       return response;

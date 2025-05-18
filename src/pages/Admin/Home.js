@@ -1,38 +1,103 @@
-import { Line, Pie } from "react-chartjs-2";
-import React from "react";
+import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend } from "chart.js";
+import AdminApi from '../../Api/Admin/AdminApi';
+import { useEffect, useState, useCallback } from 'react';
+import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
 function Home() {
-    // Dữ liệu cho Pie Chart
-    const pieData = {
-        labels: ["Red", "Blue", "Yellow"],
+    const [stats, setStats] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [fromDate, setFromDate] = useState(dayjs().subtract(7, 'day').format('YYYY-MM-DD'));
+    const [toDate, setToDate] = useState(dayjs().format('YYYY-MM-DD'));
+
+
+    const fetchStats = async (fromDate, toDate) => {
+        AdminApi.reportStats(fromDate, toDate)
+            .then(res => {
+                setStats(res);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+        };
+
+    useEffect(() => {
+        fetchStats(fromDate, toDate);
+    }, [fromDate, toDate]);
+
+    // Xử lý dữ liệu từ stats
+    const periods = stats.map(item => item.period);
+    const totalOrders = stats.map(item => item.totalOrders);
+    const totalRevenue = stats.map(item => item.totalRevenue);
+    const cancelledOrders = stats.map(item => item.cancelledOrders);
+    const completedOrders = stats.map(item => item.completedOrders);
+    const pendingOrders = stats.map(item => item.pendingOrders);
+
+    // Dữ liệu cho Line Chart
+    const lineOrderData = {
+        labels: periods,
         datasets: [
             {
-                data: [30, 50, 20],
-                backgroundColor: ["#ff6384", "#36a2eb", "#ffce56"],
+                label: "Tổng đơn hàng",
+                data: totalOrders,
+                borderColor: "#6c63ff",
+                backgroundColor: "rgba(108, 99, 255, 0.1)",
+                tension: 0.4,
+            },
+            {
+                label: "Đơn hoàn thành",
+                data: completedOrders,
+                borderColor: "#43bfae",
+                backgroundColor: "rgba(67, 191, 174, 0.1)",
+                tension: 0.4,
+            },
+            {
+                label: "Đơn chờ xử lý",
+                data: pendingOrders,
+                borderColor: "#f7b731",
+                backgroundColor: "rgba(247, 183, 49, 0.1)",
+                tension: 0.4,
+            },
+            {
+                label: "Đơn huỷ",
+                data: cancelledOrders,
+                borderColor: "#ff7675",
+                backgroundColor: "rgba(255, 118, 117, 0.1)",
+                tension: 0.4,
             },
         ],
     };
 
-    // Dữ liệu cho Line Chart
-    const lineData = {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+    const lineMonryData = {
+        labels: periods,
         datasets: [
             {
-                label: "Orders",
-                data: [0, 10, 20, 10, 10, 30],
-                borderColor: "red",
-                backgroundColor: "rgba(255, 0, 0, 0.5)",
-            },
-            {
-                label: "Sales",
-                data: [0, 11, 15, 30, 40, 50],
-                borderColor: "blue",
-                backgroundColor: "rgba(54, 162, 235, 0.5)",
-            },
+                label: "Tổng doanh thu",
+                data: totalRevenue,
+                borderColor: "#00b894",
+                backgroundColor: "rgba(0, 184, 148, 0.1)",
+                tension: 0.4,
+            }
         ],
+    };
+
+    // Tổng số tiền (không tính đơn bị huỷ) và tổng số đơn hàng
+    const totalRevenueSum = stats.reduce((sum, item) => sum + ((item.cancelledOrders ? 0 : item.totalRevenue) || 0), 0);
+    const totalOrdersSum = totalOrders.reduce((sum, v) => sum + (v || 0), 0);
+    const cancelledOrdersSum = cancelledOrders.reduce((sum, v) => sum + (v || 0), 0);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        fetchStats(fromDate, toDate);
+    };
+
+    const exportToExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(stats);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Thống kê');
+        XLSX.writeFile(wb, `thong_ke_${fromDate}_den_${toDate}.xlsx`);
     };
 
     return (
@@ -52,7 +117,7 @@ function Home() {
                         }}
                     >
                         <h6 className="pt-3">Tổng tiền</h6>
-                        <p>0đ</p>
+                        <p>{totalRevenueSum.toLocaleString()}đ</p>
                     </div>
                 </div>
                 <div className="col-md-4 p-2" style={{ height: "100px" }}>
@@ -65,7 +130,7 @@ function Home() {
                         }}
                     >
                         <h6 className="pt-3">Số đơn hàng</h6>
-                        <p>0</p>
+                        <p>{totalOrdersSum}</p>
                     </div>
                 </div>
                 <div className="col-md-4 p-2" style={{ height: "100px" }}>
@@ -77,59 +142,48 @@ function Home() {
                             textAlign: "center",
                         }}
                     >
-                        <h6 className="pt-3">Số tài khoản</h6>
-                        <p>0</p>
+                        <h6 className="pt-3">Đơn bị huỷ</h6>
+                        <p>{cancelledOrdersSum}</p>
                     </div>
                 </div>
             </div>
 
-            <form>
+            <form onSubmit={handleSubmit}>
                 <div className="row mt-4">
                     <div className="col-md-3">
                         <label style={{ marginRight: "8px" }}>Từ ngày : </label>
-                        <input type="date" id="from_date" name="from_date" />
+                        <input type="date" id="from_date" name="from_date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
                     </div>
                     <div className="col-md-3">
                         <label style={{ marginRight: "8px" }}>Đến ngày : </label>
-                        <input type="date" id="to_date" name="to_date" className="ml-2" />
+                        <input type="date" id="to_date" name="to_date" className="ml-2" value={toDate} onChange={e => setToDate(e.target.value)} />
                     </div>
                     <div className="col-md-2">
-                        <button style={{ borderColor: "#62677399" }}>Thống kê</button>
-                        <button type="button" style={{ borderColor: "#62677399", marginLeft: "10px" }}>
-                            Tất cả
-                        </button>
+                        <button style={{ borderColor: "#62677399" }} type="submit">Thống kê</button>
+                    </div>
+                    <div className="col-md-2">
+                        <button type="button" className="btn btn-success" onClick={exportToExcel} style={{ marginLeft: 8 }}>Xuất Excel</button>
                     </div>
                 </div>
             </form>
 
             <h5 style={{ color: "#62677399", marginTop: "16px" }}>Biểu đồ thống kê</h5>
 
-
-
-            {/* Chọn năm */}
-            <div className="chart row">
-                <div className="col-md-2">
-                    <input
-                        type="text"
-                        style={{ borderColor: "#62677399", width: "70%" }}
-                        placeholder="Nhập năm"
-                    />
-                </div>
-                <div className="col-md-2">
-                    <select className="w-100"></select>
-                </div>
-                <div className="col-md-2">
-                    <button style={{ borderColor: "#62677399" }}>Chọn</button>
-                </div>
-            </div>
-
-            {/* Biểu đồ Line */}
-            {/* Biểu đồ Pie */}
             <div className="row mt-3">
-                
-
                 <div className="col-md-8" style={{ marginBottom: "100px" }}>
-                    <Line data={lineData} />
+                    <Line data={lineOrderData} options={{ plugins: { legend: { display: false } } }} />
+                    <div style={{ textAlign: 'center', marginTop: 8, color: '#888' }}>
+                        <span style={{ marginRight: 16 }}><span style={{ display: 'inline-block', width: 12, height: 4, background: '#6c63ff', borderRadius: 2, marginRight: 4 }}></span>Tổng đơn hàng</span>
+                        <span style={{ marginRight: 16 }}><span style={{ display: 'inline-block', width: 12, height: 4, background: '#43bfae', borderRadius: 2, marginRight: 4 }}></span>Đơn hoàn thành</span>
+                        <span style={{ marginRight: 16 }}><span style={{ display: 'inline-block', width: 12, height: 4, background: '#f7b731', borderRadius: 2, marginRight: 4 }}></span>Đơn chờ xử lý</span>
+                        <span><span style={{ display: 'inline-block', width: 12, height: 4, background: '#ff7675', borderRadius: 2, marginRight: 4 }}></span>Đơn huỷ</span>
+                    </div>
+                </div>
+                <div className="col-md-8" style={{ marginBottom: "100px" }}>
+                    <Line data={lineMonryData} options={{ plugins: { legend: { display: false } } }} />
+                    <div style={{ textAlign: 'center', marginTop: 8, color: '#888' }}>
+                        <span style={{ display: 'inline-block', width: 12, height: 4, background: '#00b894', borderRadius: 2, marginRight: 4 }}></span>Tổng doanh thu
+                    </div>
                 </div>
             </div>
         </div>
