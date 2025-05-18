@@ -32,13 +32,12 @@ function Header() {
                     <span style={{ fontSize: 16, color: '#62677399', marginLeft: '4px' }}><i class="fas fa-chevron-down"></i></span>
                     {isSettingsOpen && (
                         <div className='account_child' style={{ position: 'absolute', marginTop: '12px', padding: '8px', background: '#dedede' }}>
-                            <h6>Welcome!</h6>
+                            {/* <h6>Welcome!</h6> */}
                             <ul >
                                 <li><Link to=''><i class="fas fa-user" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>Profile</Link></li>
-                                <li><Link to=''><i class="fas fa-cog" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>Settings</Link></li>
-                                <li><Link to=''><i class="fas fa-lock" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>Lock Screen</Link></li>
-                                <li className='pt-2'><Link to='/Login'><i class="fas fa-cog" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>
-                                    Logout</Link></li>
+                                {/* <li><Link to=''><i class="fas fa-cog" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>Settings</Link></li> */}
+                                {/* <li><Link to=''><i class="fas fa-lock" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>Lock Screen</Link></li> */}
+                                <li className='pt-2'><Link to='/Login'><i class="fas fa-cog" style={{ paddingRight: '8px', color: '#62677399', textDecoration: 'none' }}></i>Logout</Link></li>
                             </ul>
                         </div>
                     )}
@@ -46,10 +45,6 @@ function Header() {
                 <div className="col-md-1">
                     <span style={{ color: '#62677399' }}><i class="fas fa-cog me-2"></i></span>
                 </div>
-
-
-
-
             </div>
 
         </div>
