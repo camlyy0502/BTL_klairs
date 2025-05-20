@@ -32,82 +32,89 @@ export default function ChatBot() {
     const [replyMessage, setReplyMessage] = useState(null);
     const chatRef = useRef(null);
 
-    useEffect(() => {
-        if (!username) return;
-        const getChatHisoty = async () => {
-            try {
-                const res = await AccountApi.chatHistoty();
-                setMessages(res);
-            } catch (error) {
-                console.error("Failed to get user info:", error);
-                // If unauthorized or cookie is invalid, clear it
-                if (error.response?.status === 401) {
-                    setUserData(null);
-                }
+    const getChatHistory = async () => {
+        try {
+            const res = await AccountApi.chatHistoty();
+            setMessages(res);
+        } catch (error) {
+            console.error("Failed to get user info:", error);
+            if (error.response?.status === 401) {
+                setUserData(null);
             }
-        };
-        getChatHisoty();
-        const interval = setInterval(getChatHisoty, 1000); // fetch every 5 seconds
-        return () => clearInterval(interval);
-    }, []);
+        }
+    };
+
     const [connected, setConnected] = useState(false);
 
     const stompClientRef = useRef(null);
 
     const connect = () => {
-        if (!username) return; // Không connect nếu chưa có username
-        if (connected) return; // Nếu đã kết nối thì không kết nối lại
+        if (!username) return;
+        if (connected) return;
         const socket = new SockJS(process.env.REACT_APP_API + '/ws');
         const stompClient = new Client({
-        webSocketFactory: () => socket,
-        onConnect: () => {
-            try {
-                stompClient.subscribe(`/user/${username}/queue/messages`, (msg) => {
-                    try {
-                        const payload = JSON.parse(msg.body);
-                        setMessages((prev) => {
-                            const newMsgs = [...prev, { id: prev.length + 1, message: payload.message, sender: payload.sender }];
-                            // Tự động cuộn khi có tin nhắn mới
-                            setTimeout(() => {
-                                if (chatRef.current) {
-                                    chatRef.current.scrollTop = chatRef.current.scrollHeight;
-                                }
-                            }, 0);
-                            return newMsgs;
-                        });
-                        setInput('');
-                    } catch (e) {
-                        // ignore parse error
-                    }
-                });
-                setConnected(true);
-                // Tự động cuộn khi vừa kết nối xong (hiện toàn bộ lịch sử)
-                setTimeout(() => {
-                    if (chatRef.current) {
-                        chatRef.current.scrollTop = chatRef.current.scrollHeight;
-                    }
-                }, 0);
-            } catch (e) {
+            webSocketFactory: () => socket,
+            onConnect: () => {
+                try {
+                    stompClient.subscribe(`/user/${username}/queue/messages`, (msg) => {
+                        try {
+                            const payload = JSON.parse(msg.body);
+                            // Chỉ thêm tin nhắn nếu không phải do mình gửi
+                            if (payload.sender !== username) {
+                                setMessages(prev => {
+                                    // Kiểm tra xem tin nhắn đã tồn tại chưa
+                                    const messageExists = prev.some(m => 
+                                        m.message === payload.message && 
+                                        m.sender === payload.sender
+                                    );
+                                    if (messageExists) return prev;
+
+                                    const newMsgs = [...prev, {
+                                        id: prev.length + 1,
+                                        message: payload.message,
+                                        sender: payload.sender
+                                    }];
+                                    
+                                    setTimeout(() => {
+                                        if (chatRef.current) {
+                                            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                                        }
+                                    }, 0);
+                                    return newMsgs;
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Parse message error:', e);
+                        }
+                    });
+                    setConnected(true);
+                    setTimeout(() => {
+                        if (chatRef.current) {
+                            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                        }
+                    }, 0);
+                } catch (e) {
+                    setConnected(false);
+                    console.error('Subscribe error:', e);
+                }
+            },
+            onStompError: (frame) => {
+                console.error('Broker reported error: ' + frame.headers['message']);
                 setConnected(false);
-            }
-        },
-        onStompError: (frame) => {
-            console.error('Broker reported error: ' + frame.headers['message']);
-            setConnected(false);
-        },
-        onWebSocketClose: () => {
-            setConnected(false);
-            setTimeout(() => {
-                if (!connected) connect();
-            }, 2000);
-        },
-        // debug: (str) => console.log(str, connected),
+            },
+            onWebSocketClose: () => {
+                setConnected(false);
+                setTimeout(() => {
+                    if (!connected) connect();
+                }, 2000);
+            },
+            debug: (str) => console.log(str, connected)
         });
         stompClientRef.current = stompClient;
         try {
             stompClient.activate();
         } catch (e) {
-            // ignore activate error
+            console.error('Activation error:', e);
         }
     };
     const sendMessageWS = () => {
@@ -117,18 +124,28 @@ export default function ChatBot() {
             return;
         }
         if (!input) return;
+
+        // Hiển thị tin nhắn ngay lập tức
+        const messageToSend = input;
+        setMessages(prev => [...prev, {
+            id: prev.length + 1,
+            message: messageToSend,
+            sender: username
+        }]);
+
         const payload = {
             sender: username,
             recipient: 'admin@gmail.com',
-            message: input,
+            message: messageToSend
         };
+
         try {
             stompClient.publish({
                 destination: '/app/chat',
-                body: JSON.stringify(payload),
+                body: JSON.stringify(payload)
             });
         } catch (e) {
-            // ignore publish error
+            console.error('Send message error:', e);
         }
         setInput('');
     };
@@ -185,11 +202,15 @@ export default function ChatBot() {
                 <i 
                     className="fas fa-message" 
                     style={{ color: '#fff' }}
-                    onClick={() => {
-                        setShowNotification(!showNotification);
-                        if (!connected) {
-                            connect();
-                        }
+                    onClick={async () => {
+                        setShowNotification((prev) => {
+                            const next = !prev;
+                            if (next && !connected) {
+                                getChatHistory();
+                                connect();
+                            }
+                            return next;
+                        });
                     }}
                 ></i>
                 {showNotification && (
@@ -216,8 +237,8 @@ export default function ChatBot() {
                                         )}
                                         {msg.message}
                                     </div>
-                                ))
-                            )}
+                                )))
+                            }
                         </div>
                         {replyMessage && (
                             <div className="replying-tou">
