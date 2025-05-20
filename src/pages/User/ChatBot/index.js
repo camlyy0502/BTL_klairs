@@ -6,6 +6,7 @@ import AccountApi from "../../../Api/Account/AccountApi";
 
 export default function ChatBot() {
     const [userData, setUserData] = useState({});
+    const [username, setUsername] = useState('');
     
     useEffect(() => {
         const getUser = async () => {
@@ -32,6 +33,7 @@ export default function ChatBot() {
     const chatRef = useRef(null);
 
     useEffect(() => {
+        if (!username) return;
         const getChatHisoty = async () => {
             try {
                 const res = await AccountApi.chatHistoty();
@@ -48,7 +50,6 @@ export default function ChatBot() {
         const interval = setInterval(getChatHisoty, 1000); // fetch every 5 seconds
         return () => clearInterval(interval);
     }, []);
-    const [username, setUsername] = useState('');
     const [connected, setConnected] = useState(false);
 
     const stompClientRef = useRef(null);

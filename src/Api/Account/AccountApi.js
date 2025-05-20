@@ -84,7 +84,7 @@ const AccountApi = {
   },
   setDefaultAddress: async (id) => {
     try {
-      const response = await axiosClient.post(`/api/v1/addresses/${id}/default`);
+      const response = await axiosClient.put(`/api/v1/addresses/${id}/default`);
       return response;
     } catch (error) {
       console.error('API Error:', error);
