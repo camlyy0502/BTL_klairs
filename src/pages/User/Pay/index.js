@@ -132,7 +132,7 @@ function Pay() {
                                         <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }} key={item.product_id}>
                                             <p style={{ fontSize: '14px', width: '250px' }}>{item.product_name} × {item.quantity}</p>
                                             <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                                <span>{total.toLocaleString()}</span>
+                                                <span>{Number(total).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                                 <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                                     đ
                                                 </span>
@@ -143,7 +143,7 @@ function Pay() {
                                 <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                                     <p style={{ fontWeight: '500' }}>Tạm tính</p>
                                     <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                        <span>{total.toLocaleString()}</span>
+                                        <span>{Number(total).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                         <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                             đ
                                         </span>
@@ -156,7 +156,7 @@ function Pay() {
                                 <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                                     <p style={{ fontWeight: '500' }}>Tổng</p>
                                     <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                        <span>{total.toLocaleString()}</span>
+                                        <span>{Number(total).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                         <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                             đ
                                         </span>

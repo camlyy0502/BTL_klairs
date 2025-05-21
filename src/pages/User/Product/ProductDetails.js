@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
-
-import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom';
 import DashboardApi from "../../../Api/Product/DashboardApi";
+import { toast } from 'react-toastify';
+import { useCart } from '../../../contexts/CartContext';
 
 function ProductDetails() {
     const { productId } = useParams();
+    const { cart, updateCart } = useCart();
     const [productDetails, setProductDetails] = useState({});
     const [showBuyBox, setShowBuyBox] = useState(false);
     const [activeTab, setActiveTab] = useState("description");
+    const [quantity, setQuantity] = useState(1);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -37,6 +40,69 @@ function ProductDetails() {
         }
     }, [productId]);
 
+    const handleQuantityChange = (e) => {
+        const value = parseInt(e.target.value);
+        if (isNaN(value) || value < 1) {
+            setQuantity(1);
+        } else if (value > productDetails.quantity) {
+            setQuantity(productDetails.quantity);
+            toast.warning(`Chỉ còn ${productDetails.quantity} sản phẩm trong kho`);
+        } else {
+            setQuantity(value);
+        }
+    };
+
+    const handleDecrease = () => {
+        if (quantity > 1) {
+            setQuantity(quantity - 1);
+        }
+    };
+
+    const handleIncrease = () => {
+        if (quantity < productDetails.quantity) {
+            setQuantity(quantity + 1);
+        } else {
+            toast.warning(`Chỉ còn ${productDetails.quantity} sản phẩm trong kho`);
+        }
+    };
+
+    const addToCart = () => {
+        if (quantity > productDetails.quantity) {
+            toast.error('Số lượng sản phẩm trong kho không đủ');
+            return;
+        }
+
+        try {
+            let newCart = { ...cart };
+            const existing = newCart.orders.find(item => item.product_id === productDetails.product_id);
+            
+            if (existing) {
+                const newQuantity = existing.quantity + quantity;
+                if (newQuantity > productDetails.quantity) {
+                    toast.error(`Tổng số lượng trong giỏ hàng không được vượt quá ${productDetails.quantity}`);
+                    return;
+                }
+                existing.quantity = newQuantity;
+            } else {
+                newCart.orders.push({
+                    product_id: productDetails.product_id,
+                    quantity: quantity,
+                    product_img: productDetails.thumb,
+                    product_name: productDetails.name,
+                    product_price: productDetails.price,
+                    product_price_sale: productDetails.salePrice,
+                    sale: productDetails.sale
+                });
+            }
+
+            updateCart(newCart); // This will update both context and localStorage
+            toast.success('Đã thêm vào giỏ hàng');
+        } catch (error) {
+            console.error("Error adding to cart:", error);
+            toast.error('Không thể thêm vào giỏ hàng');
+        }
+    };
+
     return (
         <div className='container product_details mb-5 '>
             <div className='custom-container' style={{ borderTop: '1px solid #ddd', paddingTop: '16px' }}>
@@ -54,7 +120,7 @@ function ProductDetails() {
                         <p style={{ fontSize: '1.7em', fontWeight: '700' }}>{productDetails.name}</p>
                         <p className='mt-1' style={{ fontSize: '24px' }}>
                             <span style={{ textDecoration: productDetails.sale > 0 ? 'line-through' : 'none', color: '#777', fontWeight: '400' }}>
-                                <span>{productDetails.price}</span>
+                                <span>{Number(productDetails.price).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                 <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute' }}>
                                     đ
                                 </span>
@@ -81,11 +147,11 @@ function ProductDetails() {
                                 <input style={{ border: "1px solid #ddd", width: '40px', height: '38px' }} type='number' min='1' value='1' />
                                 <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>+</button>
                                 */}
-                                <input type="button" value="-" class="minus button is-form"/>
-                                <input type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value="1" title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" />
-                                <input type="button" value="+" class="plus button is-form"/>
+                                <input type="button" value="-" class="minus button is-form" onClick={handleDecrease}/>
+                                <input type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value={quantity} title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" onChange={handleQuantityChange}/>
+                                <input type="button" value="+" class="plus button is-form" onClick={handleIncrease}/>
                             </div>
-                            <button style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none' }}>THÊM VÀO GIỎ HÀNG</button>
+                            <button style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none' }} onClick={addToCart}>THÊM VÀO GIỎ HÀNG</button>
                         </div>
                     </div>
                     <div className='col-md-2'></div>
@@ -113,10 +179,10 @@ function ProductDetails() {
                         {/* <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>-</button> */}
                         {/* <input style={{ border: "1px solid #ddd", width: '40px', height: '38px' }} type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value="1" title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" /> */}
                         {/* <button style={{ border: "1px solid #ddd", width: '20px', height: '38px' }}>+</button> */}
-                        <input type="button" value="-" class="minus button is-form"/>
-                        <input type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value="1" title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" />
-                        <input type="button" value="+" class="plus button is-form"/>
-                        <button disabled={productDetails.quantity === 0} style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none', marginLeft: '12px' }}>THÊM VÀO GIỎ HÀNG</button>
+                        <input type="button" value="-" class="minus button is-form" onClick={handleDecrease}/>
+                        <input type="number" class="input-text qty text" step="1" min="1" max={productDetails.quantity} name="quantity" value={quantity} title="SL" size="4" placeholder="" inputmode="numeric" data-gtm-form-interact-field-id="0" onChange={handleQuantityChange}/>
+                        <input type="button" value="+" class="plus button is-form" onClick={handleIncrease}/>
+                        <button disabled={productDetails.quantity === 0} style={{ backgroundColor: '#d26e4b', color: '#fff', width: '200px', height: '40px', border: 'none', marginLeft: '12px' }} onClick={addToCart}>THÊM VÀO GIỎ HÀNG</button>
                     </div>
                 </div>
                 <div className='mt-5 ' style={{ borderTop: '1px solid #ddd' }}>

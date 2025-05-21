@@ -14,6 +14,7 @@ function ProductManager() {
   const [priceForm, setPriceForm] = useState({ product_id: null, price: '' });
   const [showInfoForm, setShowInfoForm] = useState(false);
   const [infoForm, setInfoForm] = useState({ product_id: null, name: '', intro: '', description: '' });
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   // Thêm state cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,8 +124,8 @@ function ProductManager() {
     setInfoForm({
       product_id: product.product_id,
       name: product.name,
-      intro: product.intro || '',
-      description: product.description || ''
+      intro: product.short_description || '',
+      description: product.long_description || ''
     });
     setShowInfoForm(true);
   };
@@ -178,6 +179,19 @@ function ProductManager() {
     );
   };
 
+  // Thêm hàm đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-menu') && !event.target.closest('.dropdown-toggle')) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="container mt-4">
       <h3>Quản lý sản phẩm</h3>
@@ -199,13 +213,48 @@ function ProductManager() {
                 <tr key={product.id}>
                   <td><img src={product.url} alt="img" style={{ width: 60, height: 60, objectFit: 'cover' }} /></td>
                   <td>{product.name}</td>
-                  <td>{product.price?.toLocaleString()}đ</td>
+                  <td>{product.price ? Number(product.price).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : ''}đ</td>
                   <td>{product.quantity}</td>
-                  <td>
-                    <button className="btn btn-sm btn-warning" onClick={() => handleEdit(product)}>Sửa</button>
-                    <button className="btn btn-sm btn-info ms-2" onClick={() => handleShowQuantityForm(product)}>Cập nhật số lượng</button>
-                    <button className="btn btn-sm btn-success ms-2" onClick={() => handleShowPriceForm(product)}>Cập nhật giá</button>
-                    <button className="btn btn-sm btn-secondary ms-2" onClick={() => handleShowInfoForm(product)}>Cập nhật thông tin</button>
+                  <td style={{ position: 'relative' }}>
+                    <button 
+                      className="btn" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === product.id ? null : product.id);
+                      }}
+                    >
+                      ...
+                    </button>
+                    {activeDropdown === product.id && (
+                      <div 
+                        className="dropdown-menu show" 
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '100%',
+                          zIndex: 1000,
+                          display: 'block',
+                          minWidth: '10rem',
+                          padding: '.5rem 0',
+                          backgroundColor: '#fff',
+                          borderRadius: '.25rem',
+                          boxShadow: '0 2px 5px rgba(0,0,0,.2)'
+                        }}
+                      >
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowInfoForm(product); }}>
+                          <i className="fas fa-info-circle me-2"></i>Thông tin chi tiết
+                        </button>
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleEdit(product); }}>
+                          <i className="fas fa-edit me-2"></i>Sửa thông tin
+                        </button>
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowQuantityForm(product); }}>
+                          <i className="fas fa-box me-2"></i>Cập nhật số lượng
+                        </button>
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowPriceForm(product); }}>
+                          <i className="fas fa-dollar-sign me-2"></i>Cập nhật giá
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

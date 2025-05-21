@@ -3,6 +3,7 @@ import "./chatbot.css";
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import AccountApi from "../../../Api/Account/AccountApi";
+import { toast } from "react-toastify";
 
 export default function ChatBot() {
     const [userData, setUserData] = useState({});
@@ -121,6 +122,7 @@ export default function ChatBot() {
         const stompClient = stompClientRef.current;
         if (!stompClient || !connected) {
             console.warn('STOMP client is not connected yet');
+            toast.warning('Bạn cần đăng nhập để gửi tin nhắn');
             return;
         }
         if (!input) return;
@@ -195,6 +197,15 @@ export default function ChatBot() {
             chatRef.current.scrollTop = chatRef.current.scrollHeight;
         }
     }, [messages]);
+
+    useEffect(() => {
+        if (!showNotification) return;
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') setShowNotification(false);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [showNotification]);
 
     return (
         <div>

@@ -3,20 +3,29 @@ import axiosClient from "../AxiosClient";
 const OrderAdminApi = {
     getAllOrder: async () => {
         try {
-        const response = await axiosClient.get('/api/admin/orders');
-        return response;
+            const response = await axiosClient.get('/api/admin/orders');
+            return response;
         } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+            console.error('API Error:', error);
+            throw error;
         }
     },
     getOrderDetail: async (id) => {
         try {
-        const response = await axiosClient.get(`/api/admin/orders/${id}`);
-        return response;
+            const response = await axiosClient.get(`/api/admin/orders/${id}`);
+            return response;
         } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+    createOrderDetail: async (body) => {
+        try {
+            const response = await axiosClient.post(`/api/admin/orders`, body);
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
         }
     },
 };

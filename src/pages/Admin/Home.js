@@ -170,7 +170,7 @@ function Home() {
             <h5 style={{ color: "#62677399", marginTop: "16px" }}>Biểu đồ thống kê</h5>
 
             <div className="row mt-3">
-                <div className="col-md-8" style={{ marginBottom: "100px" }}>
+                <div className="col-md-12" style={{ marginBottom: "100px" }}>
                     <Line data={lineOrderData} options={{ plugins: { legend: { display: false } } }} />
                     <div style={{ textAlign: 'center', marginTop: 8, color: '#888' }}>
                         <span style={{ marginRight: 16 }}><span style={{ display: 'inline-block', width: 12, height: 4, background: '#6c63ff', borderRadius: 2, marginRight: 4 }}></span>Tổng đơn hàng</span>
@@ -179,7 +179,7 @@ function Home() {
                         <span><span style={{ display: 'inline-block', width: 12, height: 4, background: '#ff7675', borderRadius: 2, marginRight: 4 }}></span>Đơn huỷ</span>
                     </div>
                 </div>
-                <div className="col-md-8" style={{ marginBottom: "100px" }}>
+                <div className="col-md-12" style={{ marginBottom: "100px" }}>
                     <Line data={lineMonryData} options={{ plugins: { legend: { display: false } } }} />
                     <div style={{ textAlign: 'center', marginTop: 8, color: '#888' }}>
                         <span style={{ display: 'inline-block', width: 12, height: 4, background: '#00b894', borderRadius: 2, marginRight: 4 }}></span>Tổng doanh thu
