@@ -82,13 +82,13 @@ function OrderDetailPage() {
                         <tr key={item.id}>
                             <td>{productNames[item.product_id] || item.product_id}</td>
                             <td>{item.quantity}</td>
-                            <td>{Number(item.price).toLocaleString()}đ</td>
-                            <td>{(Number(item.price) * Number(item.quantity)).toLocaleString()}đ</td>
+                            <td>{Number(item.price).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}đ</td>
+                            <td>{(Number(item.price) * Number(item.quantity)).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}đ</td>
                         </tr>
                     ))}
                 </tbody>
             </table>
-            <h4 style={{ textAlign: 'right' }}>Tổng tiền: {Number(order.total_price).toLocaleString()}đ</h4>
+            <h4 style={{ textAlign: 'right' }}>Tổng tiền: {Number(order.total_price).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}đ</h4>
         </div>
     );
 }

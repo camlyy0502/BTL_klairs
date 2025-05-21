@@ -1,6 +1,7 @@
 import React from 'react'
 
 function PayDetails() {
+    const orderTotal = 360000; // Giả sử đây là giá trị tổng đơn hàng động
     return (
         <div className='container cart mb-5 ' style={{ minHeight: '300px' }}>
             <div className='custom-container' style={{ borderTop: '1px solid #ddd', paddingTop: '16px' }}>
@@ -14,7 +15,7 @@ function PayDetails() {
                         <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                             <p style={{ fontSize: '14px', width: '250px' }}>Kem nền trang điểm Klairs Illuminating Supple Blemish Cream  × 1</p>
                             <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                <span>360.000</span>
+                                <span>{Number(orderTotal).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                 <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                     đ
                                 </span>
@@ -31,7 +32,7 @@ function PayDetails() {
                         <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                             <p style={{ fontWeight: '500' }}>Tổng</p>
                             <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                <span>360.000</span>
+                                <span>{Number(orderTotal).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                 <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                     đ
                                 </span>
@@ -56,7 +57,7 @@ function PayDetails() {
                                     <span>Tổng cộng:</span>
                                     <span style={{ fontWeight: '500', marginLeft: '8px' }}>
                                         <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                            <span>360.000</span>
+                                            <span>{Number(orderTotal).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                             <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                                 đ
                                             </span>

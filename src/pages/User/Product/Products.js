@@ -91,7 +91,7 @@ function Product() {
                             <div className="d-flex align-items-center justify-content-between">
                                 <button style={{ background: '#666', borderRadius: '99px', width: '55px', height: '30px', border: 'none ', color: '#fff' }}>Lọc</button>
                                 <p className="m-0">Giá: <strong>
-                                    <span>{price.toLocaleString()}</span>
+                                    <span>{Number(price).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute' }}>
                                         đ
                                     </span></strong></p>
@@ -110,7 +110,7 @@ function Product() {
                                                 productImg={product.url}
                                                 productPrice={product.price}
                                                 productName={product.name}
-                                                productPriceSale="500000"
+                                                productPriceSale={product.price_sale}
                                                 sale={product.sale}
                                                 quantity={product.quantity}
                                             ></ProductItem>

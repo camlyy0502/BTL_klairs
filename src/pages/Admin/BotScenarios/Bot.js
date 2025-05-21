@@ -1,20 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, Button, Modal, Form, Input, Select, Switch, InputNumber, Row, Col, Divider } from "antd";
+
+import BotScenariosApi from '../../../Api/Admin/BotScenarios';
+
 
 const { Option } = Select;
 
-const initialScenarios = [
-  {
-    id: 1,
-    keyword: "hello",
-    response: "Xin chào!",
-    responseType: "text",
-    enabled: true,
-  },
-];
 
 function BotScenariosPage() {
-  const [scenarios, setScenarios] = useState(initialScenarios);
+  const [scenarios, setScenarios] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
@@ -23,28 +17,78 @@ function BotScenariosPage() {
   const [botEnabled, setBotEnabled] = useState(true);
   const [globalMinReplyTime, setGlobalMinReplyTime] = useState(10);
 
+  useEffect(() => {
+    async function fetchScenarios() {
+      try {
+        const res = await BotScenariosApi.listBotScenarios();
+        setScenarios(res);
+      } catch (e) {
+        setScenarios([]); // fallback nếu lỗi
+      }
+    }
+    fetchScenarios();
+  }, []);
+
   const showModal = (record = null) => {
     setEditing(record);
     form.setFieldsValue(record || { enabled: true, minReplyTime: globalMinReplyTime });
     setModalVisible(true);
   };
 
-  const handleOk = () => {
-    form.validateFields().then(values => {
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
       if (editing) {
-        setScenarios(scenarios.map(s => (s.id === editing.id ? { ...editing, ...values } : s)));
+        // Cập nhật kịch bản
+        await BotScenariosApi.updateBotScenario(editing.id, values);
       } else {
-        setScenarios([...scenarios, { ...values, id: Date.now() }]);
+        // Tạo kịch bản mới
+        await BotScenariosApi.createBotScenarios(values);
       }
+      // Sau khi thêm/sửa thành công, gọi lại API lấy danh sách mới
+      const updatedList = await BotScenariosApi.listBotScenarios();
+      setScenarios(updatedList);
+      
       setModalVisible(false);
       setEditing(null);
       form.resetFields();
-    });
+    } catch (error) {
+      Modal.error({
+        title: editing ? 'Lỗi cập nhật kịch bản' : 'Lỗi tạo kịch bản',
+        content: 'Đã có lỗi xảy ra. Vui lòng thử lại.'
+      });
+    }
   };
 
-  const handleDelete = id => {
-    setScenarios(scenarios.filter(s => s.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await BotScenariosApi.deleteBotScenario(id);
+      setScenarios(scenarios.filter(s => s.id !== id));
+    } catch (error) {
+      Modal.error({
+        title: 'Lỗi xóa kịch bản',
+        content: 'Đã có lỗi xảy ra. Vui lòng thử lại.'
+      });
+    }
   };
+
+  useEffect(() => {
+    const updateBotConfig = async () => {
+      try {
+        await BotScenariosApi.updateBotConfig({
+          enabled: botEnabled,
+          globalMinReplyTime
+        });
+      } catch (error) {
+        Modal.error({
+          title: 'Lỗi cập nhật cấu hình',
+          content: 'Không thể cập nhật cấu hình bot. Vui lòng thử lại.'
+        });
+      }
+    };
+
+    updateBotConfig();
+  }, [botEnabled, globalMinReplyTime]);
 
   const columns = [
     { title: "Keyword", dataIndex: "keyword" },
@@ -92,10 +136,10 @@ function BotScenariosPage() {
           <Form.Item name="response" label="Response" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="responseType" label="Response Type" rules={[{ required: true }]}>
+          <Form.Item name="response_type" label="Response Type" rules={[{ required: true }]}>
             <Select>
-              <Option value="text">Text</Option>
-              <Option value="image">Image</Option>
+              <Option value="TEXT">Text</Option>
+              <Option value="PRODUCT_LIST">List Product</Option>
             </Select>
           </Form.Item>
           <Form.Item name="enabled" label="Bật/Tắt" valuePropName="checked">

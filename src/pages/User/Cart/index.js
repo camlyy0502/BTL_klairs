@@ -1,26 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom';
 import DashboardApi from '../../../Api/Product/DashboardApi';
 import { toast } from 'react-toastify';
+import { useCart } from '../../../contexts/CartContext';
 
 function Cart() {
     const navigate = useNavigate();
-    const [cart, setCart] = useState({ address_id: '', orders: [] });
-
-    useEffect(() => {
-        const cartKey = 'klairs_cart';
-        const stored = localStorage.getItem(cartKey);
-        if (stored) {
-            setCart(JSON.parse(stored));
-        }
-        // Listen for cart changes (optional, for real-time update)
-        const handleCartUpdated = () => {
-            const updated = localStorage.getItem(cartKey);
-            setCart(updated ? JSON.parse(updated) : { address_id: '', orders: [] });
-        };
-        window.addEventListener('cart-updated', handleCartUpdated);
-        return () => window.removeEventListener('cart-updated', handleCartUpdated);
-    }, []);
+    const { cart, updateCart } = useCart();
 
     const handleToPay = () => {
         if (!cart.orders || cart.orders.length === 0) {
@@ -51,12 +37,9 @@ function Cart() {
                 toast.error('Số lượng sản phẩm trong kho không đủ!');
                 return;
             }
-            const cartKey = 'klairs_cart';
             const newOrders = cart.orders.map(o => o.product_id === productId ? { ...o, quantity: newQuantity } : o);
             const newCart = { ...cart, orders: newOrders };
-            setCart(newCart);
-            localStorage.setItem(cartKey, JSON.stringify(newCart));
-            window.dispatchEvent(new Event('cart-updated'));
+            updateCart(newCart);
         } catch (error) {
             toast.error('Có lỗi khi cập nhật số lượng!');
         }
@@ -98,12 +81,9 @@ function Cart() {
                                             <div className='col-md-2 p-0 d-flex align-items-center'>
                                                 <button style={{ width: '25px', height: '25px', borderRadius: '50%', border: '1px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     onClick={() => {
-                                                        const cartKey = 'klairs_cart';
                                                         const newOrders = cart.orders.filter(o => o.product_id !== item.product_id);
                                                         const newCart = { ...cart, orders: newOrders };
-                                                        setCart(newCart);
-                                                        localStorage.setItem(cartKey, JSON.stringify(newCart));
-                                                        window.dispatchEvent(new Event('cart-updated'));
+                                                        updateCart(newCart);
                                                     }}
                                                 >X</button>
                                                 <img style={{ width: '75px', height: '75px', marginLeft: 8 }} src={item.product_img} alt={item.product_name} />
@@ -113,7 +93,7 @@ function Cart() {
                                             </div>
                                             <div className='col-md-2'>
                                                 <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                                    <span>{price.toLocaleString()}</span>
+                                                    <span>{Number(price).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                                         đ
                                                     </span>
@@ -134,7 +114,7 @@ function Cart() {
                                             </div>
                                             <div className='col-md-2 p-0' style={{ textAlign: 'right' }}>
                                                 <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                                    <span>{total.toLocaleString()}</span>
+                                                    <span>{Number(total).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                                         đ
                                                     </span>
@@ -156,7 +136,7 @@ function Cart() {
                             <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                                 <p style={{ fontWeight: '500' }}>Tạm tính</p>
                                 <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                    <span>{total.toLocaleString()}</span>
+                                    <span>{Number(total).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                         đ
                                     </span>
@@ -169,7 +149,7 @@ function Cart() {
                             <div className='d-flex align-items-center justify-content-between mt-3' style={{ borderBottom: '1px solid #ddd' }}>
                                 <p style={{ fontWeight: '500' }}>Tổng</p>
                                 <span className='cart-price' style={{ marginLeft: '4px', position: 'relative', color: '#000' }}>
-                                    <span>{total.toLocaleString()}</span>
+                                    <span>{Number(total).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>
                                     <span style={{ textDecoration: 'underline', fontSize: '12px', position: 'absolute', top: '5%' }}>
                                         đ
                                     </span>
