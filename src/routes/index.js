@@ -12,6 +12,9 @@ import Login from "../pages/User/Login";
 import HomeAd from "../pages/Admin/Home";
 import Category from "../pages/Admin/Category";
 import Account from "../pages/Admin/Account/Account";
+import Bot from "../pages/Admin/BotScenarios/Bot";
+import OrderManager from "../pages/Admin/OrderManager";
+import ProductManager from "../pages/Admin/ProductManager";
 import Chat from "../pages/Admin/Chat";
 import AddressPage from '../pages/User/Account/AddressPage';
 import OrderPage from '../pages/User/OrderPage';
@@ -55,6 +58,15 @@ const publicRoutes = [
     },
     {
         path: '/admin/account', component: Account, layout: Admin
+    },
+    {
+        path: '/admin/bot', component: Bot, layout: Admin
+    },
+    {
+        path: '/admin/products', component: ProductManager, layout: Admin
+    },
+    {
+        path: '/admin/orders', component: OrderManager, layout: Admin
     },
     {
         path: '/admin/chat', component: Chat, layout: Admin
