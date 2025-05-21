@@ -5,6 +5,13 @@ import AdminApi from '../../Api/Admin/AdminApi';
 import ProductApi from '../../Api/Admin/ProductApi';
 import { toast } from 'react-toastify';
 
+const ORDER_STATUS = [
+    'Chờ xử lý',
+    'Đang giao',
+    'Hoàn thành',
+    'Đã hủy'
+];
+
 function OrderManager() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -12,6 +19,17 @@ function OrderManager() {
     const [userMap, setUserMap] = useState({});
     const [productMap, setProductMap] = useState({});
     const [userEmail, setUserEmail] = useState('');
+    const [showStatusPopup, setShowStatusPopup] = useState(false);
+    const [statusOrderId, setStatusOrderId] = useState(null);
+    const [newStatus, setNewStatus] = useState('');
+
+    // Thêm state cho phân trang
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Thêm state cho trạng thái đang chỉnh sửa
+    const [editingStatus, setEditingStatus] = useState({});
+    const [savingStatusId, setSavingStatusId] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -34,7 +52,6 @@ function OrderManager() {
         try {
             const res = await OrderApi.getAllOrder();
             setOrders(res);
-            
         } catch (e) {
             toast.error('Không thể tải danh sách đơn hàng');
         }
@@ -47,7 +64,7 @@ function OrderManager() {
             const map = {};
             users.forEach(u => { map[u.id] = u; });
             setUserMap(map);
-        } catch {}
+        } catch { }
     };
 
     const fetchProducts = async () => {
@@ -56,17 +73,14 @@ function OrderManager() {
             const map = {};
             products.forEach(p => { map[p.id] = p; });
             setProductMap(map);
-        } catch {}
+        } catch { }
     };
 
     const handleViewDetail = async (order) => {
         try {
             const res = await OrderApi.getOrderDetail(order.id);
-            // Lấy danh sách sản phẩm cho các item trong đơn hàng
             if (res && res.order_items) {
-                // Lấy tất cả product_id duy nhất trong đơn hàng
                 const productIds = Array.from(new Set(res.order_items.map(item => item.product_id)));
-                // Gọi API lấy chi tiết từng sản phẩm
                 const productDetails = await Promise.all(productIds.map(async (id) => {
                     try {
                         const prod = await ProductApi.getDetailProduct(id);
@@ -75,10 +89,8 @@ function OrderManager() {
                         return { id, name: id };
                     }
                 }));
-                // Map product_id -> product_name
                 const productNameMap = {};
                 productDetails.forEach(p => { productNameMap[p.id] = p.name; });
-                // Gán tên sản phẩm vào từng item
                 const itemsWithName = res.order_items.map(item => ({ ...item, name: productNameMap[item.product_id] || item.product_id }));
                 setSelectedOrder({ ...res, order_items: itemsWithName });
             } else {
@@ -93,86 +105,206 @@ function OrderManager() {
         setSelectedOrder(null);
     };
 
+    // Xử lý thay đổi trạng thái trên select
+    const handleStatusChange = (orderId, value) => {
+        setEditingStatus(prev => ({ ...prev, [orderId]: value }));
+    };
+
+    // Lưu trạng thái mới
+    const handleSaveStatus = async (order) => {
+        setSavingStatusId(order.id);
+        try {
+            await OrderApi.updateOrderStatus(order.id, editingStatus[order.id]);
+            toast.success('Cập nhật trạng thái thành công');
+            setEditingStatus(prev => {
+                const newObj = { ...prev };
+                delete newObj[order.id];
+                return newObj;
+            });
+            fetchOrders();
+        } catch {
+            toast.error('Cập nhật trạng thái thất bại');
+        }
+        setSavingStatusId(null);
+    };
+
+    // Tính toán dữ liệu cho trang hiện tại
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(orders.length / itemsPerPage);
+
+    // Hàm chuyển trang
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    // Render nút phân trang
+    const renderPagination = () => {
+        if (totalPages <= 1) return null;
+        let pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(
+                <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`btn btn-sm ${currentPage === i ? 'btn-primary' : 'btn-light'}`}
+                    style={{ margin: '0 2px' }}
+                >
+                    {i}
+                </button>
+            );
+        }
+        return (
+            <div style={{ marginTop: 16, textAlign: 'center' }}>
+                {pages}
+            </div>
+        );
+    };
+
     return (
         <div className="container mt-4">
-        <h3>Quản lý đơn hàng</h3>
-        {loading ? <p>Đang tải...</p> : (
-            <table className="table table-bordered">
-            <thead>
-                <tr>
-                <th>Mã đơn</th>
-                <th>Khách hàng</th>
-                <th>Ngày đặt</th>
-                <th>Trạng thái</th>
-                <th>Tổng tiền</th>
-                <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                {orders.map(order => (
-                <tr key={order.id}>
-                    <td>{order.id}</td>
-                    <td>{order.id ? <OrderUserEmailByOrderId orderId={order.id} /> : 'Ẩn'}</td>
-                    <td>{order.order_date ? new Date(order.order_date).toLocaleString() : ''}</td>
-                    <td>{order.status || 'Chờ xử lý'}</td>
-                    <td>{order.total_price?.toLocaleString() || ''}đ</td>
-                    <td>
-                    <button className="btn btn-sm btn-info" onClick={() => handleViewDetail(order)}>Xem chi tiết</button>
-                    </td>
-                </tr>
-                ))}
-            </tbody>
-            </table>
-        )}
-        {selectedOrder && (
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 340, maxWidth: '90vw', width: 'fit-content', position: 'relative', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                <h5>Chi tiết đơn hàng #{selectedOrder.id}</h5>
-                <p><b>Khách hàng:</b> {userEmail}</p>
-                <p><b>Ngày đặt:</b> {selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleString() : ''}</p>
-                <p><b>Trạng thái:</b> {selectedOrder.status || 'Chờ xử lý'}</p>
-                <p><b>Tổng tiền:</b> {selectedOrder.total_price?.toLocaleString() || ''}đ</p>
-                <h6>Sản phẩm:</h6>
-                <ul style={{ paddingLeft: 0, margin: 0 }}>
-                {(selectedOrder.order_items).map((item, idx) => (
-                    <li key={idx} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', listStyle: 'none', padding: '2px 0' }}>
-                      - {item.name} x {item.quantity} ({item.price?.toLocaleString()}đ)
-                    </li>
-                ))}
-                </ul>
-                <button className="btn btn-secondary mt-2" onClick={handleCloseDetail}>Đóng</button>
-                <span onClick={handleCloseDetail} style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }} title="Đóng">&times;</span>
-            </div>
-            </div>
-        )}
+            <h3>Quản lý đơn hàng</h3>
+            {loading ? <p>Đang tải...</p> : (
+                <>
+                    <table className="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Ngày đặt</th>
+                                <th>Trạng thái</th>
+                                <th>Tổng tiền</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {currentOrders.map(order => (
+                                <tr key={order.id}>
+                                    <td>{order.id}</td>
+                                    <td>{order.id ? <OrderUserEmailByOrderId orderId={order.id} /> : 'Ẩn'}</td>
+                                    <td>{order.order_date ? new Date(order.order_date).toLocaleString() : ''}</td>
+                                    <td>{order.status || 'Chờ xử lý'}</td>
+                                    <td>{order.total_price?.toLocaleString() || ''}đ</td>
+                                    <td>
+                                        <button className="btn btn-sm btn-info mb-1" onClick={() => handleViewDetail(order)}>Xem chi tiết</button>
+                                        <button
+                                            className="btn btn-sm btn-warning ms-2"
+                                            onClick={() => {
+                                                setStatusOrderId(order.id);
+                                                setNewStatus(order.status || 'Chờ xử lý');
+                                                setShowStatusPopup(true);
+                                            }}
+                                        >
+                                            Đổi trạng thái
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {renderPagination()}
+                </>
+            )}
+            {selectedOrder && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 340, maxWidth: '90vw', width: 'fit-content', position: 'relative', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                        <h5>Chi tiết đơn hàng #{selectedOrder.id}</h5>
+                        <p><b>Khách hàng:</b> {userEmail}</p>
+                        <p><b>Ngày đặt:</b> {selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleString() : ''}</p>
+                        <p><b>Trạng thái:</b> {selectedOrder.status || 'Chờ xử lý'}</p>
+                        <p><b>Tổng tiền:</b> {selectedOrder.total_price?.toLocaleString() || ''}đ</p>
+                        <h6>Sản phẩm:</h6>
+                        <ul style={{ paddingLeft: 0, margin: 0 }}>
+                            {(selectedOrder.order_items).map((item, idx) => (
+                                <li key={idx} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', listStyle: 'none', padding: '2px 0' }}>
+                                    - {item.name} x {item.quantity} ({item.price?.toLocaleString()}đ)
+                                </li>
+                            ))}
+                        </ul>
+                        <button className="btn btn-secondary mt-2" onClick={handleCloseDetail}>Đóng</button>
+                        <span onClick={handleCloseDetail} style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }} title="Đóng">&times;</span>
+                    </div>
+                </div>
+            )}
+            {showStatusPopup && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.2)', zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div style={{
+                        background: '#fff', padding: 24, borderRadius: 10, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', alignItems: 'center'
+                    }}>
+                        <h5>Đổi trạng thái đơn hàng</h5>
+                        <div style={{marginBottom: 8}}>
+                          <b>Mã đơn hàng:</b> {statusOrderId}
+                        </div>
+                        <select
+                            value={newStatus}
+                            onChange={e => setNewStatus(e.target.value)}
+                            style={{ minWidth: 180 }}
+                        >
+                            {ORDER_STATUS.map(st => (
+                                <option key={st} value={st}>{st}</option>
+                            ))}
+                        </select>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                                className="btn btn-success"
+                                onClick={async () => {
+                                    setSavingStatusId(statusOrderId);
+                                    try {
+                                        await OrderApi.updateOrderStatus(statusOrderId, newStatus);
+                                        toast.success('Cập nhật trạng thái thành công');
+                                        setShowStatusPopup(false);
+                                        setStatusOrderId(null);
+                                        setNewStatus('');
+                                        fetchOrders();
+                                    } catch {
+                                        toast.error('Cập nhật trạng thái thất bại');
+                                    }
+                                    setSavingStatusId(null);
+                                }}
+                                disabled={savingStatusId === statusOrderId}
+                            >
+                                {savingStatusId === statusOrderId ? 'Đang lưu...' : 'Lưu'}
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => setShowStatusPopup(false)}>Hủy</button>
+                        </div>
+                        <span onClick={() => setShowStatusPopup(false)} style={{
+                            position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
+                        }} title="Đóng">&times;</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
 function OrderUserEmailByOrderId({ orderId }) {
-  const [email, setEmail] = React.useState('');
-  React.useEffect(() => {
-    let mounted = true;
-    import('../../Api/Admin/OrderApi').then(({ default: OrderApi }) => {
-      OrderApi.getOrderDetail(orderId)
-        .then(order => {
-          if (mounted) {
-            if (order && order.user_id) {
-              import('../../Api/Admin/AdminApi').then(({ default: AdminApi }) => {
-                AdminApi.getAccountById(order.user_id)
-                  .then(user => setEmail(user?.username || 'Ẩn'))
-                  .catch(() => setEmail('Ẩn'));
-              });
-            } else {
-              setEmail('Ẩn');
-            }
-          }
-        })
-        .catch(() => { if (mounted) setEmail('Ẩn'); });
-    });
-    return () => { mounted = false; };
-  }, [orderId]);
-  return email || 'Ẩn';
+    const [email, setEmail] = React.useState('');
+    React.useEffect(() => {
+        let mounted = true;
+        import('../../Api/Admin/OrderApi').then(({ default: OrderApi }) => {
+            OrderApi.getOrderDetail(orderId)
+                .then(order => {
+                    if (mounted) {
+                        if (order && order.user_id) {
+                            import('../../Api/Admin/AdminApi').then(({ default: AdminApi }) => {
+                                AdminApi.getAccountById(order.user_id)
+                                    .then(user => setEmail(user?.username || 'Ẩn'))
+                                    .catch(() => setEmail('Ẩn'));
+                            });
+                        } else {
+                            setEmail('Ẩn');
+                        }
+                    }
+                })
+                .catch(() => { if (mounted) setEmail('Ẩn'); });
+        });
+        return () => { mounted = false; };
+    }, [orderId]);
+    return email || 'Ẩn';
 }
 
 export default OrderManager;

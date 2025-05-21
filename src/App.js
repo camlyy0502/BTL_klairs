@@ -10,6 +10,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProductManager from './pages/Admin/ProductManager';
 import OrderManager from './pages/Admin/OrderManager';
+import BotScenariosPage from './pages/Admin/BotScenarios/Bot';
 function App() {
 
 
@@ -28,7 +29,7 @@ function App() {
               Layout = Fragment;
             }
             // Wrap admin routes with ProtectedRoute
-            const isAdminRoute = route.path.startsWith('/Admin');
+            const isAdminRoute = route.path.startsWith('/admin');
             const element = (
               <Layout>
                 <Page />
@@ -41,6 +42,7 @@ function App() {
         }
         <Route path="/admin/products" element={<ProtectedRoute><ProductManager /></ProtectedRoute>} />
         <Route path="/admin/orders" element={<ProtectedRoute><OrderManager /></ProtectedRoute>} />
+        <Route path="/admin/bot" element={<ProtectedRoute><BotScenariosPage /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
