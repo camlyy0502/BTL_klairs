@@ -28,6 +28,24 @@ const OrderAdminApi = {
             throw error;
         }
     },
+    updateOrderStatus: async (id, status) => {
+        try {
+            const response = await axiosClient.put(`/api/admin/orders/${id}/status`, { status });
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+    updateOrder: async (id, body) => {
+        try {
+            const response = await axiosClient.put(`/api/admin/orders/${id}`, body);
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
 };
 
 export default OrderAdminApi;
