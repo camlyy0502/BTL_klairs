@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { publicRoutes } from './routes';
+import { publicRoutes } from './routes/Routes';
 import User from './components/Layout/User';
 import ProtectedRoute from './routes/ProtectedRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';

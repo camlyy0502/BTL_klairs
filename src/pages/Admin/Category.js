@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import CategoryAdminApi from '../../Api/Admin/CategoryAdminApi';
+import { toast } from 'react-toastify';
 
 function Category() {
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Sữa rửa mặt' },
-    { id: 2, name: 'Kem dưỡng' },
-  ]);
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({ name: '' });
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Thêm state cho popup xác nhận xóa
   const [showDeletePopup, setShowDeletePopup] = useState(false);
@@ -30,10 +30,15 @@ function Category() {
     setDeleteId(id);
     setShowDeletePopup(true);
   };
-
   // Xác nhận xóa
-  const confirmDelete = () => {
-    setCategories(categories.filter(c => c.id !== deleteId));
+  const confirmDelete = async () => {
+    try {
+      await CategoryAdminApi.deleteCategory(deleteId);
+      toast.success('Xóa danh mục thành công');
+      fetchCategories();
+    } catch (error) {
+      toast.error('Xóa danh mục thất bại');
+    }
     setShowDeletePopup(false);
     setDeleteId(null);
   };
@@ -47,31 +52,54 @@ function Category() {
   const handleFormChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
-    if (editId) {
-      setCategories(categories.map(c => c.id === editId ? { ...c, name: form.name } : c));
-    } else {
-      setCategories([...categories, { id: Date.now(), name: form.name }]);
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const response = await CategoryAdminApi.getCategories();
+      setCategories(response);
+    } catch (error) {
+      toast.error('Không thể tải danh sách danh mục');
     }
-    setShowForm(false);
+    setLoading(false);
   };
 
-  return (
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    
+    try {
+      if (editId) {
+        await CategoryAdminApi.updateCategory(editId, form);
+        toast.success('Cập nhật danh mục thành công');
+      } else {
+        await CategoryAdminApi.createCategory(form);
+        toast.success('Thêm danh mục thành công');
+      }
+      fetchCategories();
+      setShowForm(false);
+    } catch (error) {
+      toast.error(editId ? 'Cập nhật danh mục thất bại' : 'Thêm danh mục thất bại');
+    }
+  };    return (
     <div className="container mt-4">
-      <h3>Quản lý loại sản phẩm</h3>
-      <button className="btn btn-primary mb-3" onClick={handleAdd}>Thêm loại sản phẩm</button>
-      <table className="table table-bordered">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Tên loại</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
+      <h3>Quản lý danh mục</h3>
+      <button className="btn btn-primary mb-3" onClick={handleAdd}>Thêm danh mục</button>
+      {loading ? (
+        <p>Đang tải...</p>
+      ) : (
+        <table className="table table-bordered">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Tên loại</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
           {categories.map((cat, idx) => (
             <tr key={cat.id}>
               <td>{idx + 1}</td>
@@ -82,8 +110,10 @@ function Category() {
               </td>
             </tr>
           ))}
+          
         </tbody>
       </table>
+      )}
       {/* Popup form thêm/sửa */}
       {showForm && (
         <div style={{

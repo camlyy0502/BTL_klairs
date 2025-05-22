@@ -5,12 +5,12 @@ function Sidebar() {
     const location = useLocation();
     const navItems = [
         { to: '/admin', icon: 'fas fa-home me-2', label: 'Dashboard' },
-        { to: '/admin/account', icon: 'fas fa-user me-2', label: 'Tài khoản' },
-        { to: '/admin/category', icon: 'fas fa-user me-2', label: 'Danh mục' },
+        { to: '/admin/account', icon: 'fas fa-user me-2', label: 'Quản lý tài khoản' },
         { to: '/admin/chat', icon: 'fas fa-user me-2', label: 'Quản lý tin nhắn' },
         { to: '/admin/bot', icon: 'fas fa-user me-2', label: 'Quản lý bot' },
         { to: '/admin/products', icon: 'fas fa-box me-2', label: 'Quản lý sản phẩm' }, // Thêm mục quản lý sản phẩm
         { to: '/admin/orders', icon: 'fas fa-shopping-cart me-2', label: 'Quản lý đơn hàng' }, // Thêm mục quản lý đơn hàng
+        { to: '/admin/category', icon: 'fas fa-user me-2', label: 'Danh mục' },
     ];
 
     return (

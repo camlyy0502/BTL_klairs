@@ -4,7 +4,7 @@ import AddressManager from '../Account/AddressManager';
 import OrderApi from '../../../Api/Card/CartApi';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Login from '../Login';
+import Login from '../Login/LoginUser';
 import AccountApi from '../../../Api/Account/AccountApi';
 
 function Pay() {

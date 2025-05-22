@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import DashboardApi from '../../Api/Product/DashboardApi';
+import ProductApi from '../../Api/Admin/ProductApi';
+import CategoryAdminApi from '../../Api/Admin/CategoryAdminApi';
 import { toast } from 'react-toastify';
 
 function ProductManager() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', price: '', image: '' });
+  const [showForm, setShowForm] = useState(false);  const [form, setForm] = useState({
+    name: '',
+    price: '',
+    quantity: 0,
+    short_description: '',
+    long_description: '',
+    origin: '',
+    category_id: '',
+    thumbnail: null,
+    thumbnailPreview: null
+  });
   const [editId, setEditId] = useState(null);
   const [showQuantityForm, setShowQuantityForm] = useState(false);
   const [quantityForm, setQuantityForm] = useState({ product_id: null, quantity: '' });
@@ -22,12 +33,22 @@ function ProductManager() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await CategoryAdminApi.getCategories();
+      setCategories(res);
+    } catch (e) {
+      toast.error('Không thể tải danh sách danh mục');
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await DashboardApi.getAllProduct();
+      const res = await ProductApi.getAllProduct();
       setProducts(res.data);
     } catch (e) {
       toast.error('Không thể tải danh sách sản phẩm');
@@ -40,12 +61,17 @@ function ProductManager() {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(products.length / itemsPerPage);
-
   const handleEdit = (product) => {
     setForm({
       name: product.name,
       price: product.price,
-      image: product.url,
+      quantity: product.quantity || 0,
+      short_description: product.short_description || '',
+      long_description: product.long_description || '',
+      origin: product.origin || '',
+      category_id: product.category_id || '',
+      thumbnail: null,
+      thumbnailPreview: product.url
     });
     setEditId(product.product_id);
     setShowForm(true);
@@ -54,30 +80,69 @@ function ProductManager() {
   const handleShowQuantityForm = (product) => {
     setQuantityForm({ product_id: product.product_id, quantity: product.quantity });
     setShowQuantityForm(true);
-  };
-
-  const handleAdd = () => {
-    setForm({ name: '', price: '', image: '' });
+  };  const handleAdd = () => {
+    setForm({
+      name: '',
+      price: '',
+      quantity: 0,
+      short_description: '',
+      long_description: '',
+      origin: '',
+      category_id: '',
+      thumbnail: null,
+      thumbnailPreview: null
+    });
     setEditId(null);
     setShowForm(true);
+  };  const handleFormChange = (e) => {
+    if (e.target.name === 'thumbnail') {
+      const file = e.target.files[0];
+      if (file) {
+        setForm({
+          ...form,
+          thumbnail: file,
+          thumbnailPreview: URL.createObjectURL(file)
+        });
+      }
+    } else if (e.target.name === 'quantity') {
+      setForm({ ...form, quantity: parseInt(e.target.value) || 0 });
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
   };
-
-  const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
   const handleQuantityChange = (e) => {
-    setQuantityForm({ ...quantityForm, quantity: e.target.value });
-  };
-
-  const handleFormSubmit = async (e) => {
+    const value = parseInt(e.target.value) || 0;
+    setQuantityForm({ ...quantityForm, quantity: value });
+  };  const handleFormSubmit = async (e) => {
     e.preventDefault();
     try {
+      const formData = new FormData();
+      
+      // Create product JSON data
+      const productData = {
+        name: form.name,
+        price: form.price,
+        quantity: form.quantity || 0,
+        short_description: form.short_description,
+        long_description: form.long_description,
+        origin: form.origin,
+        category_id: form.category_id
+      };
+      
+      // Append the product JSON
+      formData.append('product', JSON.stringify(productData));
+      
+      // Append the thumbnail
+      if (form.thumbnail) {
+        formData.append('thumb', form.thumbnail);
+      }
+
       if (editId) {
-        await DashboardApi.updateProduct({ ...form, product_id: editId });
+        formData.append('product_id', editId);
+        await ProductApi.updateProduct(formData);
         toast.success('Cập nhật sản phẩm thành công');
       } else {
-        await DashboardApi.addProduct(form);
+        await ProductApi.addProduct(formData);
         toast.success('Thêm sản phẩm thành công');
       }
       setShowForm(false);
@@ -86,11 +151,15 @@ function ProductManager() {
       toast.error('Lưu sản phẩm thất bại');
     }
   };
-
   const handleQuantitySubmit = async (e) => {
     e.preventDefault();
     try {
-      await DashboardApi.updateProduct({ product_id: quantityForm.product_id, quantity: quantityForm.quantity });
+      const quantity = parseInt(quantityForm.quantity) || 0;
+      if (quantity < 0) {
+        toast.error('Số lượng không thể là số âm');
+        return;
+      }
+      await ProductApi.updateProduct({ product_id: quantityForm.product_id, quantity: quantity });
       toast.success('Cập nhật số lượng thành công');
       setShowQuantityForm(false);
       fetchProducts();
@@ -111,7 +180,7 @@ function ProductManager() {
   const handlePriceSubmit = async (e) => {
     e.preventDefault();
     try {
-      await DashboardApi.updateProduct({ product_id: priceForm.product_id, price: priceForm.price });
+      await ProductApi.updateProduct({ product_id: priceForm.product_id, price: priceForm.price });
       toast.success('Cập nhật giá thành công');
       setShowPriceForm(false);
       fetchProducts();
@@ -137,7 +206,7 @@ function ProductManager() {
   const handleInfoSubmit = async (e) => {
     e.preventDefault();
     try {
-      await DashboardApi.updateProduct({
+      await ProductApi.updateProduct({
         product_id: infoForm.product_id,
         name: infoForm.name,
         intro: infoForm.intro,
@@ -262,19 +331,135 @@ function ProductManager() {
           </table>
           {renderPagination()}
         </>
-      )}
-      {showForm && (
+      )}      {showForm && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <form onSubmit={handleFormSubmit} style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 340, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}>
+          <form onSubmit={handleFormSubmit} style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 600, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}>
             <h5>{editId ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}</h5>
-            <input name="name" value={form.name} onChange={handleFormChange} placeholder="Tên sản phẩm" required />
-            <input name="price" value={form.price} onChange={handleFormChange} placeholder="Giá" type="number" required />
-            <input name="image" value={form.image} onChange={handleFormChange} placeholder="Link hình ảnh" required />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            
+            <div className="form-group">
+              <label>Tên sản phẩm</label>
+              <input 
+                className="form-control"
+                name="name" 
+                value={form.name} 
+                onChange={handleFormChange} 
+                placeholder="Nhập tên sản phẩm" 
+                required 
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Mô tả ngắn</label>
+              <textarea 
+                className="form-control"
+                name="short_description" 
+                value={form.short_description} 
+                onChange={handleFormChange} 
+                placeholder="Nhập mô tả ngắn về sản phẩm"
+                rows={3}
+                required 
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Danh mục sản phẩm</label>
+              <select
+                className="form-control"
+                name="category_id"
+                value={form.category_id}
+                onChange={handleFormChange}
+                required
+              >
+                <option value="">Chọn danh mục</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Mô tả chi tiết</label>
+              <textarea 
+                className="form-control"
+                name="long_description" 
+                value={form.long_description} 
+                onChange={handleFormChange} 
+                placeholder="Nhập mô tả chi tiết về sản phẩm"
+                rows={5}
+                required 
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Xuất xứ</label>
+              <input 
+                className="form-control"
+                name="origin" 
+                value={form.origin} 
+                onChange={handleFormChange} 
+                placeholder="Nhập xuất xứ sản phẩm" 
+                required 
+              />
+            </div>            <div className="form-group">
+              <label>Giá (VNĐ)</label>
+              <input 
+                className="form-control"
+                name="price" 
+                value={form.price} 
+                onChange={handleFormChange} 
+                placeholder="Nhập giá sản phẩm" 
+                type="number" 
+                required 
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Số lượng</label>
+              <input 
+                className="form-control"
+                name="quantity" 
+                value={form.quantity} 
+                onChange={handleFormChange} 
+                placeholder="Nhập số lượng sản phẩm" 
+                type="number"
+                min="0" 
+                required 
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Hình ảnh</label>
+              <input 
+                className="form-control"
+                type="file" 
+                name="thumbnail" 
+                onChange={handleFormChange} 
+                accept="image/*"
+                required={!editId} 
+              />
+              {form.thumbnailPreview && (
+                <img 
+                  src={form.thumbnailPreview} 
+                  alt="Preview" 
+                  style={{ 
+                    marginTop: 8,
+                    maxWidth: '200px', 
+                    maxHeight: '200px',
+                    objectFit: 'contain' 
+                  }} 
+                />
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button type="submit" className="btn btn-success">Lưu</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Hủy</button>
             </div>
-            <span onClick={() => setShowForm(false)} style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }} title="Đóng">&times;</span>
+            <span onClick={() => setShowForm(false)} style={{
+              position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
+            }} title="Đóng">&times;</span>
           </form>
         </div>
       )}
@@ -282,7 +467,16 @@ function ProductManager() {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <form onSubmit={handleQuantitySubmit} style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}>
             <h5>Cập nhật số lượng</h5>
-            <input name="quantity" value={quantityForm.quantity} onChange={handleQuantityChange} placeholder="Số lượng mới" type="number" required />
+            <input 
+              name="quantity" 
+              value={quantityForm.quantity} 
+              onChange={handleQuantityChange} 
+              placeholder="Số lượng mới" 
+              type="number"
+              min="0"
+              step="1"
+              required 
+            />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button type="submit" className="btn btn-success">Lưu</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowQuantityForm(false)}>Hủy</button>

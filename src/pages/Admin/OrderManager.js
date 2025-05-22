@@ -120,7 +120,8 @@ function OrderManager() {
                 const mappedProducts = response.data.map(product => ({
                     id: product.id,
                     name: product.name,
-                    price: product.price
+                    price: product.price,
+                    quantity: product.quantity,
                 }));
                 setProducts(mappedProducts);
 
@@ -141,8 +142,7 @@ function OrderManager() {
         try {
             const res = await OrderApi.getOrderDetail(order.id);
             if (res && res.order_items) {
-                const productIds = Array.from(new Set(res.order_items.map(item => item.product_id)));
-                const productDetails = await Promise.all(productIds.map(async (id) => {
+                const productIds = Array.from(new Set(res.order_items.map(item => item.product_id)));                const productDetails = await Promise.all(productIds.map(async (id) => {
                     try {
                         const prod = await ProductApi.getDetailProduct(id);
                         return { id, name: prod?.product.name };
@@ -152,8 +152,23 @@ function OrderManager() {
                 }));
                 const productNameMap = {};
                 productDetails.forEach(p => { productNameMap[p.id] = p.name; });
-                const itemsWithName = res.order_items.map(item => ({ ...item, name: productNameMap[item.product_id] || item.product_id }));
-                setSelectedOrder({ ...res, order_items: itemsWithName });
+                
+                // Nhóm các sản phẩm có cùng ID và tính tổng số lượng
+                const groupedItems = res.order_items.reduce((acc, item) => {
+                    const existingItem = acc.find(p => p.product_id === item.product_id);
+                    if (existingItem) {
+                        existingItem.quantity += item.quantity;
+                        existingItem.price = item.price;
+                    } else {
+                        acc.push({
+                            ...item,
+                            name: productNameMap[item.product_id] || item.product_id
+                        });
+                    }
+                    return acc;
+                }, []);
+                
+                setSelectedOrder({ ...res, order_items: groupedItems });
             } else {
                 setSelectedOrder(res);
             }
@@ -201,17 +216,47 @@ function OrderManager() {
             ...prev,
             products: prev.products.filter((_, i) => i !== index)
         }));
-    }; const handleProductChange = (index, field, value) => {
+    };    const handleProductChange = (index, field, value) => {
         setCreateFormData(prev => {
-            const newProducts = prev.products.map((item, i) =>
-                i === index ? { ...item, [field]: value } : item
+            let newValue = value;
+            
+            if (field === 'product_id') {
+                // Khi chọn sản phẩm mới, đặt số lượng mặc định là 1
+                // và kiểm tra xem có đủ trong kho không
+                const product = products.find(p => p.id === value);
+                if (product) {
+                    if ((product.quantity || 0) < 1) {
+                        toast.error(`Sản phẩm ${product.name} đã hết hàng`);
+                        return prev; // Không cho chọn sản phẩm đã hết hàng
+                    }
+                }
+                const newProducts = prev.products.map((item, i) => 
+                    i === index ? { ...item, [field]: value, quantity: 1 } : item
+                );
+                return {
+                    ...prev,
+                    products: newProducts,
+                };
+            }
+            
+            // Nếu đang thay đổi số lượng, kiểm tra số lượng trong kho
+            if (field === 'quantity') {
+                const product = products.find(p => p.id === prev.products[index].product_id);
+                if (product && value > (product.quantity || 0)) {
+                    toast.error(`Số lượng trong kho chỉ còn ${product.quantity || 0} sản phẩm`);
+                    newValue = product.quantity || 0;
+                }
+            }
+
+            const newProducts = prev.products.map((item, i) => 
+                i === index ? { ...item, [field]: newValue } : item
             );
             return {
                 ...prev,
                 products: newProducts,
             };
         });
-    };    // Tính giá tiền của từng sản phẩm và tổng tiền
+    };// Tính giá tiền của từng sản phẩm và tổng tiền
     const calculateProductPrice = (productId, quantity) => {
         const product = productMap[productId];
         if (product && quantity) {
@@ -238,7 +283,7 @@ function OrderManager() {
             }
             if (editingOrder) {
                 // Update order
-                await OrderApi.updateOrderDetail(editingOrder.id, createFormData);
+                await OrderApi.updateOrder(editingOrder.id, createFormData);
                 toast.success('Cập nhật đơn hàng thành công');
             } else {
                 // Create order
@@ -306,21 +351,31 @@ function OrderManager() {
         setSelectedUserId(null);
         setEditingOrder(null);
         setShowCreateForm(false);
-    };
-
-    const handleEditOrder = async (order) => {
+    };    const handleEditOrder = async (order) => {
         try {
             const detail = await OrderApi.getOrderDetail(order.id);
             setEditingOrder(detail);
             setShowCreateForm(true);
+
+            // Nhóm các sản phẩm có cùng ID và tính tổng số lượng
+            const groupedProducts = detail.order_items.reduce((acc, item) => {
+                const existingProduct = acc.find(p => p.product_id === item.product_id);
+                if (existingProduct) {
+                    existingProduct.quantity += item.quantity;
+                } else {
+                    acc.push({
+                        product_id: item.product_id,
+                        quantity: item.quantity
+                    });
+                }
+                return acc;
+            }, []);
+
             setCreateFormData({
                 customer_name: order.customer_name,
                 customer_phone: order.customer_phone,
                 shipping_address: order.shipping_address,
-                products: detail.order_items.map(item => ({
-                    product_id: item.product_id,
-                    quantity: item.quantity
-                })),
+                products: groupedProducts,
                 status: detail.status || 'Chờ xử lý'
             });
             setSelectedUserId(detail.user_id || null);
@@ -613,15 +668,14 @@ function OrderManager() {
                                                                 optionFilterProp="children"
                                                                 style={{ width: '100%' }}
                                                                 notFoundContent="Không tìm thấy sản phẩm"
-                                                            >
-                                                                {Array.isArray(products) && products
+                                                            >                                                                {Array.isArray(products) && products
                                                                     .filter(p =>
                                                                         // Chỉ hiển thị sản phẩm chưa được chọn ở dòng khác hoặc là chính dòng này
                                                                         !createFormData.products.some((item, idx2) => item.product_id === p.id && idx2 !== index)
                                                                     )
                                                                     .map(p => (
                                                                         <Select.Option key={p.id} value={p.id}>
-                                                                            {p.name} - {Number(p.price).toLocaleString('vi-VN')}đ
+                                                                            {p.name} - {Number(p.price).toLocaleString('vi-VN')}đ - Còn {p.quantity || 0} sản phẩm
                                                                         </Select.Option>
                                                                     ))
                                                                 }
