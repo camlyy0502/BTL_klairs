@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import ProductItem from "./ProductItem";
 import DashboardApi from '../../../Api/Product/DashboardApi';
+import { getFullImageUrl } from '../../../utils/imageUrl';
 // import { useNavigate } from 'react-router-dom';
 
 

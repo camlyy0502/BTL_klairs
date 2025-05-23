@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ProductApi from '../../Api/Admin/ProductApi';
 import CategoryAdminApi from '../../Api/Admin/CategoryAdminApi';
 import { toast } from 'react-toastify';
+import { getFullImageUrl } from '../../utils/imageUrl';
 
 function ProductManager() {
   const [products, setProducts] = useState([]);
@@ -26,6 +27,10 @@ function ProductManager() {
   const [showInfoForm, setShowInfoForm] = useState(false);
   const [infoForm, setInfoForm] = useState({ product_id: null, name: '', intro: '', description: '' });
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Thêm state cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -126,7 +131,7 @@ function ProductManager() {
         short_description: form.short_description,
         long_description: form.long_description,
         origin: form.origin,
-        category_id: form.category_id
+        // category_id: form.category_id
       };
       
       // Append the product JSON
@@ -220,6 +225,26 @@ function ProductManager() {
     }
   };
 
+  const handleViewDetail = async (productId) => {
+    try {
+        const product = await ProductApi.getDetailProduct(productId);
+        setSelectedProduct(product.product); // hoặc set state để hiển thị modal chi tiết
+        setShowDetailModal(true);
+    } catch (error) {
+        toast.error('Không thể lấy thông tin sản phẩm');
+    }
+  };
+
+  const handleEditProduct = async (productId) => {
+    try {
+        const product = await ProductApi.getDetailProduct(productId);
+        setEditingProduct(product.product); // hoặc set state để fill form sửa
+        setShowEditModal(true);
+    } catch (error) {
+        toast.error('Không thể lấy thông tin sản phẩm');
+    }
+  };
+
   // Hàm chuyển trang
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -280,7 +305,7 @@ function ProductManager() {
             <tbody>
               {currentProducts.map(product => (
                 <tr key={product.id}>
-                  <td><img src={product.url} alt="img" style={{ width: 60, height: 60, objectFit: 'cover' }} /></td>
+                  <td><img src={getFullImageUrl(product.url)} alt="img" style={{ width: 60, height: 60, objectFit: 'cover' }} /></td>
                   <td>{product.name}</td>
                   <td>{product.price ? Number(product.price).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : ''}đ</td>
                   <td>{product.quantity}</td>
@@ -310,10 +335,10 @@ function ProductManager() {
                           boxShadow: '0 2px 5px rgba(0,0,0,.2)'
                         }}
                       >
-                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowInfoForm(product); }}>
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleViewDetail(product.id); }}>
                           <i className="fas fa-info-circle me-2"></i>Thông tin chi tiết
                         </button>
-                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleEdit(product); }}>
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleEditProduct(product.id); }}>
                           <i className="fas fa-edit me-2"></i>Sửa thông tin
                         </button>
                         <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowQuantityForm(product); }}>
@@ -510,6 +535,144 @@ function ProductManager() {
               <button type="button" className="btn btn-secondary" onClick={() => setShowInfoForm(false)}>Hủy</button>
             </div>
             <span onClick={() => setShowInfoForm(false)} style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }} title="Đóng">&times;</span>
+          </form>
+        </div>
+      )}
+      {showDetailModal && selectedProduct && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 2400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 600, maxWidth: '90%', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h5>Chi tiết sản phẩm</h5>
+            <div className="row">
+              <div className="col-md-4" style={{ marginBottom: 16 }}>
+                <img 
+                  src={getFullImageUrl(selectedProduct.thumb)} 
+                  alt="Product" 
+                  style={{ 
+                    width: '100%', 
+                    maxWidth: 220, 
+                    maxHeight: 220, 
+                    borderRadius: 8, 
+                    objectFit: 'contain',
+                    background: '#fafafa',
+                    border: '1px solid #eee'
+                  }} 
+                />
+              </div>
+              <div className="col-md-8">
+                <div className="mb-2"><strong>Tên sản phẩm:</strong> {selectedProduct.name}</div>
+                <div className="mb-2"><strong>Danh mục:</strong> {categories.find(cat => cat.id === selectedProduct.category_id)?.name || selectedProduct.category_id}</div>
+                <div className="mb-2"><strong>Giá:</strong> {selectedProduct.price ? Number(selectedProduct.price).toLocaleString('vi-VN') : ''}đ</div>
+                <div className="mb-2"><strong>Số lượng:</strong> {selectedProduct.quantity}</div>
+                <div className="mb-2"><strong>Xuất xứ:</strong> {selectedProduct.origin}</div>
+                <div className="mb-2"><strong>Mô tả ngắn:</strong> {selectedProduct.short_description}</div>
+                <div className="mb-2"><strong>Mô tả chi tiết:</strong>
+                  <div style={{ color: '#444', marginTop: 4 }}>
+                    {selectedProduct.long_description
+                      ? selectedProduct.long_description.split('||').map((html, idx) => (
+                          <div key={idx} style={{ marginBottom: 8 }} dangerouslySetInnerHTML={{ __html: html }} />
+                        ))
+                      : <span>Không có</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>Đóng</button>
+            </div>
+            <span onClick={() => setShowDetailModal(false)} style={{
+              position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
+            }} title="Đóng">&times;</span>
+          </div>
+        </div>
+      )}
+      {showEditModal && editingProduct && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 2500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const formData = new FormData();
+                const productData = {
+                  name: editingProduct.name,
+                  price: editingProduct.price,
+                  quantity: editingProduct.quantity,
+                  short_description: editingProduct.short_description,
+                  long_description: editingProduct.long_description,
+                  origin: editingProduct.origin,
+                  category_id: editingProduct.category_id
+                };
+                formData.append('product', JSON.stringify(productData));
+                if (editingProduct.thumbnail instanceof File) {
+                  formData.append('thumb', editingProduct.thumbnail);
+                }
+                formData.append('product_id', editingProduct.product_id);
+                await ProductApi.updateProduct(formData);
+                toast.success('Cập nhật sản phẩm thành công');
+                setShowEditModal(false);
+                fetchProducts();
+              } catch (e) {
+                toast.error('Cập nhật sản phẩm thất bại');
+              }
+            }}
+            style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 600, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}
+          >
+            <h5>Sửa sản phẩm</h5>
+            <div className="form-group">
+              <label>Tên sản phẩm</label>
+              <input className="form-control" name="name" value={editingProduct.name} onChange={e => setEditingProduct({ ...editingProduct, name: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label>Mô tả ngắn</label>
+              <textarea className="form-control" name="short_description" value={editingProduct.short_description} onChange={e => setEditingProduct({ ...editingProduct, short_description: e.target.value })} rows={3} required />
+            </div>
+            <div className="form-group">
+              <label>Danh mục sản phẩm</label>
+              <select className="form-control" name="category_id" value={editingProduct.category_id} onChange={e => setEditingProduct({ ...editingProduct, category_id: e.target.value })} required>
+                <option value="">Chọn danh mục</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Mô tả chi tiết</label>
+              <textarea className="form-control" name="long_description" value={editingProduct.long_description} onChange={e => setEditingProduct({ ...editingProduct, long_description: e.target.value })} rows={5} required />
+            </div>
+            <div className="form-group">
+              <label>Xuất xứ</label>
+              <input className="form-control" name="origin" value={editingProduct.origin} onChange={e => setEditingProduct({ ...editingProduct, origin: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label>Giá (VNĐ)</label>
+              <input className="form-control" name="price" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} type="number" required />
+            </div>
+            {/* XÓA hoặc COMMENT trường số lượng ở đây */}
+            {/* 
+            <div className="form-group">
+              <label>Số lượng</label>
+              <input className="form-control" name="quantity" value={editingProduct.quantity} onChange={e => setEditingProduct({ ...editingProduct, quantity: e.target.value })} type="number" min="0" required />
+            </div>
+            */}
+            <div className="form-group">
+              <label>Hình ảnh</label>
+              <input className="form-control" type="file" name="thumbnail" onChange={e => {
+                const file = e.target.files[0];
+                if (file) {
+                  setEditingProduct({ ...editingProduct, thumbnail: file, url: URL.createObjectURL(file) });
+                }
+              }} accept="image/*" />
+              {editingProduct.url && (
+                <img src={editingProduct.url} alt="Preview" style={{ marginTop: 8, maxWidth: '200px', maxHeight: '200px', objectFit: 'contain' }} />
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button type="submit" className="btn btn-success">Lưu</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Hủy</button>
+            </div>
+            <span onClick={() => setShowEditModal(false)} style={{
+              position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
+            }} title="Đóng">&times;</span>
           </form>
         </div>
       )}

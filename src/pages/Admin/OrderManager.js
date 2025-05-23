@@ -90,7 +90,6 @@ function OrderManager() {
     const fetchUsers = async () => {
         try {
             const response = await AdminApi.listAccount();
-            console.log('Users:', response);
             if (Array.isArray(response)) {
                 const mappedUsers = response.map(user => ({
                     id: user.id,

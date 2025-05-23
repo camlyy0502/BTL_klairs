@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import DashboardApi from '../../../Api/Product/DashboardApi';
 import { toast } from 'react-toastify';
 import { useCart } from '../../../contexts/CartContext';
+import { getFullImageUrl } from '../../../utils/imageUrl';
 
 const ProductItem = ({ productId, productImg, productName, productPrice, productPriceSale, sale, quantity }) => {
     const { cart, updateCart } = useCart();
@@ -47,7 +48,7 @@ const ProductItem = ({ productId, productImg, productName, productPrice, product
     return (
         <Link to={`/products/${productId}`} onClick={e => e.stopPropagation()}>
             <div className='product-item'>
-                <img src={productImg} alt={productName}/>
+                <img src={getFullImageUrl(productImg)} alt={productName}/>
                 <p className='text-center mt-2 mb-0' style={{ fontSize: '16px', color: '#000' }}>{productName}</p>
                 <p className='text-center mt-1 mb-0' style={{ color: '#000' }}>
     <span style={{ textDecoration: sale > 0 ? 'line-through' : 'none' }}>

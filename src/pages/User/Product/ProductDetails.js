@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import DashboardApi from "../../../Api/Product/DashboardApi";
 import { toast } from 'react-toastify';
 import { useCart } from '../../../contexts/CartContext';
+import { getFullImageUrl } from '../../../utils/imageUrl';
 
 function ProductDetails() {
     const { productId } = useParams();
@@ -108,7 +109,7 @@ function ProductDetails() {
             <div className='custom-container' style={{ borderTop: '1px solid #ddd', paddingTop: '16px' }}>
                 <div className='row'>
                     <div className='col-md-6 product_details-img'>
-                        <img src={productDetails.thumb} alt={productDetails.name} />
+                        <img src={getFullImageUrl(productDetails.thumb)} alt={productDetails.name} />
                         {productDetails.sale && <div className='sale'>-{productDetails.sale}%</div>}
                     </div>
                     <div className='col-md-4'>
@@ -157,7 +158,7 @@ function ProductDetails() {
                     <div className='col-md-2'></div>
                 </div>
                 <div className={`buy-box d-flex align-items-center justify-content-center  ${showBuyBox ? "show" : ""}`}>
-                    <img style={{ width: '45px', height: '45px', marginLeft: '16px' }} src={productDetails.thumb} alt="Buy Box" />
+                    <img style={{ width: '45px', height: '45px', marginLeft: '16px' }} src={getFullImageUrl(productDetails.thumb)} alt="Buy Box" />
                     <p style={{ width: '230px', fontSize: '14px', fontWeight: '600', marginBottom: '0' }}>{productDetails.name}</p>
                     <p className='text-center ml-2 mb-0' style={{ color: '#000' }}>
                         <span style={{ textDecoration: productDetails.sale > 0 ? 'line-through' : 'none' }}>
@@ -207,8 +208,9 @@ function ProductDetails() {
                         {activeTab === "description" ? (
                             <div>
                                 <h4 className='mt-3'>{productDetails.descriptionTitle}</h4>
-                                {productDetails.long_description}
-                                <img style={{ width: '100%', height: '1050px' }} src={productDetails.descriptionImage} alt="Description" />
+                                {productDetails.long_description?.split('||').map((html, idx) => (
+                                    <div key={idx} style={{ marginBottom: 16 }} dangerouslySetInnerHTML={{ __html: html }} />
+                                ))}
                             </div>
                         ) : (
                             <div>
