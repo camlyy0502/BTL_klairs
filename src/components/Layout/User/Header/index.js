@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from "react";
-import Login from '../../../../pages/User/Login';
-import ChatBot from '../../../../pages/User/ChatBot';
+import Login from '../../../../pages/User/Login/LoginUser';
+import ChatBot from '../../../../pages/User/ChatBot/ChatUser';
 import AccountApi from '../../../../Api/Account/AccountApi';
 import { v4 as uuid4 } from 'uuid';
 import { useCart } from '../../../../contexts/CartContext';

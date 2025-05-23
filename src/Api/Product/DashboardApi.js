@@ -10,6 +10,7 @@ const DashboardApi = {
       throw error;
     }
   },
+
   getLimitProduct: async (limit = 12, page = 1) => {
     try {
       const response = await axiosClient.get('/api/v1/products', {

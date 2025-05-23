@@ -4,14 +4,17 @@ import AdminApi from '../../Api/Admin/AdminApi';
 import { useEffect, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
+import OrderAdminApi from "../../Api/Admin/OrderApi";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
 function Home() {
     const [stats, setStats] = useState([]);
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [fromDate, setFromDate] = useState(dayjs().subtract(7, 'day').format('YYYY-MM-DD'));
     const [toDate, setToDate] = useState(dayjs().format('YYYY-MM-DD'));
+    const [userMap, setUserMap] = useState({});
 
 
     const fetchStats = async (fromDate, toDate) => {
@@ -25,6 +28,28 @@ function Home() {
 
     useEffect(() => {
         fetchStats(fromDate, toDate);
+    }, [fromDate, toDate]);
+
+    // Fetch danh sách user và build userMap
+    useEffect(() => {
+        AdminApi.listAccount().then(users => {
+            // users là mảng user, mỗi user có user_id, name, email, phone...
+            const map = {};
+            users.forEach(u => {
+                map[u.id] = u; // hoặc map[u.user_id] = u; tùy theo API trả về
+            });
+            setUserMap(map);
+        });
+    }, []);
+
+    const fetchOrders = async (fromDate, toDate) => {
+        // Giả sử AdminApi.listOrders là API lấy danh sách đơn hàng theo ngày
+        const res = await OrderAdminApi.getAllOrder();
+        setOrders(res);
+    };
+
+    useEffect(() => {
+        fetchOrders(fromDate, toDate);
     }, [fromDate, toDate]);
 
     // Xử lý dữ liệu từ stats
@@ -94,7 +119,25 @@ function Home() {
     };
 
     const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(stats);
+        const data = orders.map(item => {
+            let name = '';
+            let phone = '';
+            if (item.user_id && userMap[item.user_id]) {
+                name = userMap[item.user_id].name || userMap[item.user_id].email || '';
+                phone = userMap[item.user_id].phone || '';
+            } else {
+                name = item.customer_name || '';
+                phone = item.customer_phone || '';
+            }
+            return {
+                'Tên/Email': name,
+                'Mã đơn': item.orderId || item.id || '',
+                'Ngày đặt hàng': item.order_date ? dayjs(item.order_date).format('DD/MM/YYYY HH:mm:ss') : '',
+                'Số điện thoại': phone,
+                'Tổng tiền': item.totalPrice || item.total_price || 0
+            };
+        });
+        const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Thống kê');
         XLSX.writeFile(wb, `thong_ke_${fromDate}_den_${toDate}.xlsx`);

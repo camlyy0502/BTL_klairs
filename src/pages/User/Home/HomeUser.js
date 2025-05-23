@@ -2,6 +2,7 @@ import React from 'react';
 import ProductItem from '../Product/ProductItem';
 import { useEffect, useState } from 'react';
 import DashboardApi from '../../../Api/Product/DashboardApi';
+import { getFullImageUrl } from '../../../utils/imageUrl';
 
 function Home() {
     const [products, setProducts] = useState([]);

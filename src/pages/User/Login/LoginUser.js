@@ -24,7 +24,6 @@ const Login = ({ isVisible, onClose, isRegister }) => {
         setRightPanelActive(false);
         setError("");
     };
-
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         setIsSubmit(true);
@@ -33,7 +32,15 @@ const Login = ({ isVisible, onClose, isRegister }) => {
         try {
             const response = await AccountApi.login(loginData);
             if (response.cookie) {
-                window.location.reload();
+                // Get user info to check role
+                const userInfo = await AccountApi.info();
+                if (userInfo.roles && userInfo.roles.some(role => role !== "CUSTOMER")) {
+                    // If user has any role other than CUSTOMER, redirect to admin
+                    window.location.href = "/admin";
+                } else {
+                    // If user is a customer, just reload the page
+                    window.location.reload();
+                }
                 onClose();
             }
         } catch (error) {

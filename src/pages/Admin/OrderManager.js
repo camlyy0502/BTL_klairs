@@ -13,6 +13,13 @@ const ORDER_STATUS = [
     'Đã hủy'
 ];
 
+const STATUS_MAP = {
+    'Chờ xử lý': 'PENDING',
+    'Đang giao': 'SHIPPING',
+    'Hoàn thành': 'COMPLETED',
+    'Đã hủy': 'CANCELLED'
+};
+
 function OrderManager() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -43,6 +50,12 @@ function OrderManager() {
 
     const [users, setUsers] = useState([]);
     const [products, setProducts] = useState([]);
+    const [matchedUser, setMatchedUser] = useState(null);
+    const [matchedUsers, setMatchedUsers] = useState([]);
+
+    // State lưu user đã chọn từ dropdown
+    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [editingOrder, setEditingOrder] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -77,15 +90,15 @@ function OrderManager() {
     const fetchUsers = async () => {
         try {
             const response = await AdminApi.listAccount();
-            
             if (Array.isArray(response)) {
                 const mappedUsers = response.map(user => ({
                     id: user.id,
                     name: user.username || 'Không có tên',
-                    email: user.email || 'Không có email'
+                    email: user.email || 'Không có email',
+                    phone: user.phone || 'Không có số điện thoại'
                 }));
                 setUsers(mappedUsers);
-                
+
                 // Tạo map user cho các chức năng khác
                 const map = {};
                 mappedUsers.forEach(u => { map[u.id] = u; });
@@ -98,18 +111,19 @@ function OrderManager() {
             console.error('Error fetching users:', error);
             toast.error('Không thể tải danh sách khách hàng');
         }
-    };    const fetchProducts = async () => {
+    }; const fetchProducts = async () => {
         try {
             const response = await ProductApi.getAllProduct();
-            
+
             if (Array.isArray(response.data)) {
                 const mappedProducts = response.data.map(product => ({
                     id: product.id,
                     name: product.name,
-                    price: product.price
+                    price: product.price,
+                    quantity: product.quantity,
                 }));
                 setProducts(mappedProducts);
-                
+
                 const map = {};
                 mappedProducts.forEach(p => { map[p.id] = p; });
                 setProductMap(map);
@@ -127,8 +141,7 @@ function OrderManager() {
         try {
             const res = await OrderApi.getOrderDetail(order.id);
             if (res && res.order_items) {
-                const productIds = Array.from(new Set(res.order_items.map(item => item.product_id)));
-                const productDetails = await Promise.all(productIds.map(async (id) => {
+                const productIds = Array.from(new Set(res.order_items.map(item => item.product_id)));                const productDetails = await Promise.all(productIds.map(async (id) => {
                     try {
                         const prod = await ProductApi.getDetailProduct(id);
                         return { id, name: prod?.product.name };
@@ -138,8 +151,23 @@ function OrderManager() {
                 }));
                 const productNameMap = {};
                 productDetails.forEach(p => { productNameMap[p.id] = p.name; });
-                const itemsWithName = res.order_items.map(item => ({ ...item, name: productNameMap[item.product_id] || item.product_id }));
-                setSelectedOrder({ ...res, order_items: itemsWithName });
+                
+                // Nhóm các sản phẩm có cùng ID và tính tổng số lượng
+                const groupedItems = res.order_items.reduce((acc, item) => {
+                    const existingItem = acc.find(p => p.product_id === item.product_id);
+                    if (existingItem) {
+                        existingItem.quantity += item.quantity;
+                        existingItem.price = item.price;
+                    } else {
+                        acc.push({
+                            ...item,
+                            name: productNameMap[item.product_id] || item.product_id
+                        });
+                    }
+                    return acc;
+                }, []);
+                
+                setSelectedOrder({ ...res, order_items: groupedItems });
             } else {
                 setSelectedOrder(res);
             }
@@ -189,15 +217,45 @@ function OrderManager() {
         }));
     };    const handleProductChange = (index, field, value) => {
         setCreateFormData(prev => {
+            let newValue = value;
+            
+            if (field === 'product_id') {
+                // Khi chọn sản phẩm mới, đặt số lượng mặc định là 1
+                // và kiểm tra xem có đủ trong kho không
+                const product = products.find(p => p.id === value);
+                if (product) {
+                    if ((product.quantity || 0) < 1) {
+                        toast.error(`Sản phẩm ${product.name} đã hết hàng`);
+                        return prev; // Không cho chọn sản phẩm đã hết hàng
+                    }
+                }
+                const newProducts = prev.products.map((item, i) => 
+                    i === index ? { ...item, [field]: value, quantity: 1 } : item
+                );
+                return {
+                    ...prev,
+                    products: newProducts,
+                };
+            }
+            
+            // Nếu đang thay đổi số lượng, kiểm tra số lượng trong kho
+            if (field === 'quantity') {
+                const product = products.find(p => p.id === prev.products[index].product_id);
+                if (product && value > (product.quantity || 0)) {
+                    toast.error(`Số lượng trong kho chỉ còn ${product.quantity || 0} sản phẩm`);
+                    newValue = product.quantity || 0;
+                }
+            }
+
             const newProducts = prev.products.map((item, i) => 
-                i === index ? { ...item, [field]: value } : item
+                i === index ? { ...item, [field]: newValue } : item
             );
             return {
                 ...prev,
                 products: newProducts,
             };
         });
-    };    // Tính giá tiền của từng sản phẩm và tổng tiền
+    };// Tính giá tiền của từng sản phẩm và tổng tiền
     const calculateProductPrice = (productId, quantity) => {
         const product = productMap[productId];
         if (product && quantity) {
@@ -212,21 +270,27 @@ function OrderManager() {
             total += calculateProductPrice(item.product_id, item.quantity);
         });
         return total;
-    };const handleCreateOrder = async () => {
+    }; const handleCreateOrUpdateOrder = async () => {
         try {
             if (!createFormData.customer_name || !createFormData.customer_phone || !createFormData.shipping_address) {
                 toast.error('Vui lòng điền đầy đủ thông tin khách hàng');
                 return;
             }
-            
             if (!createFormData.products[0].product_id) {
                 toast.error('Vui lòng chọn ít nhất một sản phẩm');
                 return;
             }
-
-            await OrderApi.createOrderDetail(createFormData);
-            toast.success('Tạo đơn hàng thành công');
+            if (editingOrder) {
+                // Update order
+                await OrderApi.updateOrder(editingOrder.id, createFormData);
+                toast.success('Cập nhật đơn hàng thành công');
+            } else {
+                // Create order
+                await OrderApi.createOrderDetail(createFormData);
+                toast.success('Tạo đơn hàng thành công');
+            }
             setShowCreateForm(false);
+            setEditingOrder(null);
             setCreateFormData({
                 customer_name: '',
                 customer_phone: '',
@@ -236,7 +300,7 @@ function OrderManager() {
             });
             fetchOrders();
         } catch (error) {
-            toast.error('Tạo đơn hàng thất bại');
+            toast.error(editingOrder ? 'Cập nhật đơn hàng thất bại' : 'Tạo đơn hàng thất bại');
         }
     };
 
@@ -282,7 +346,41 @@ function OrderManager() {
             products: [{ product_id: '', quantity: 1 }],
             status: 'Chờ xử lý'
         });
+        setMatchedUsers([]);
+        setSelectedUserId(null);
+        setEditingOrder(null);
         setShowCreateForm(false);
+    };    const handleEditOrder = async (order) => {
+        try {
+            const detail = await OrderApi.getOrderDetail(order.id);
+            setEditingOrder(detail);
+            setShowCreateForm(true);
+
+            // Nhóm các sản phẩm có cùng ID và tính tổng số lượng
+            const groupedProducts = detail.order_items.reduce((acc, item) => {
+                const existingProduct = acc.find(p => p.product_id === item.product_id);
+                if (existingProduct) {
+                    existingProduct.quantity += item.quantity;
+                } else {
+                    acc.push({
+                        product_id: item.product_id,
+                        quantity: item.quantity
+                    });
+                }
+                return acc;
+            }, []);
+
+            setCreateFormData({
+                customer_name: order.customer_name,
+                customer_phone: order.customer_phone,
+                shipping_address: order.shipping_address,
+                products: groupedProducts,
+                status: detail.status || 'Chờ xử lý'
+            });
+            setSelectedUserId(detail.user_id || null);
+        } catch (error) {
+            toast.error('Không thể lấy chi tiết đơn hàng để sửa');
+        }
     };
 
     return (
@@ -292,7 +390,7 @@ function OrderManager() {
                     <div className="card">
                         <div className="card-header">
                             <h4>Danh sách đơn hàng
-                                <button 
+                                <button
                                     className="btn btn-primary btn-sm float-end"
                                     onClick={() => setShowCreateForm(true)}
                                 >
@@ -323,18 +421,18 @@ function OrderManager() {
                                                     <td>{order.status || 'Chờ xử lý'}</td>
                                                     <td>{order.total_price ? Number(order.total_price).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : ''}đ</td>
                                                     <td style={{ position: 'relative' }}>
-                                                        <button 
-                                                            className="btn" 
+                                                        <button
+                                                            className="btn"
                                                             onClick={e => {
                                                                 e.stopPropagation();
                                                                 setActiveDropdown(activeDropdown === order.id ? null : order.id);
                                                             }}
-                                                        >   
-                                                        ...
+                                                        >
+                                                            ...
                                                         </button>
                                                         {activeDropdown === order.id && (
-                                                            <div 
-                                                                className="dropdown-menu show" 
+                                                            <div
+                                                                className="dropdown-menu show"
                                                                 style={{
                                                                     position: 'absolute',
                                                                     right: 0,
@@ -358,6 +456,12 @@ function OrderManager() {
                                                                     setShowStatusPopup(true);
                                                                 }}>
                                                                     <i className="fas fa-edit me-2"></i>Đổi trạng thái
+                                                                </button>
+                                                                <button className="dropdown-item" onClick={() => {
+                                                                    setActiveDropdown(null);
+                                                                    handleEditOrder(order);
+                                                                }}>
+                                                                    <i className="fas fa-edit me-2"></i>Sửa đơn hàng
                                                                 </button>
                                                             </div>
                                                         )}
@@ -399,8 +503,8 @@ function OrderManager() {
                                         background: '#fff', padding: 24, borderRadius: 10, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', alignItems: 'center'
                                     }}>
                                         <h5>Đổi trạng thái đơn hàng</h5>
-                                        <div style={{marginBottom: 8}}>
-                                          <b>Mã đơn hàng:</b> {statusOrderId}
+                                        <div style={{ marginBottom: 8 }}>
+                                            <b>Mã đơn hàng:</b> {statusOrderId}
                                         </div>
                                         <select
                                             value={newStatus}
@@ -417,7 +521,9 @@ function OrderManager() {
                                                 onClick={async () => {
                                                     setSavingStatusId(statusOrderId);
                                                     try {
-                                                        await OrderApi.updateOrderStatus(statusOrderId, newStatus);
+                                                        // Chuyển trạng thái hiển thị sang trạng thái API
+                                                        const apiStatus = STATUS_MAP[newStatus] || 'pending';
+                                                        await OrderApi.updateOrderStatus(statusOrderId, apiStatus);
                                                         toast.success('Cập nhật trạng thái thành công');
                                                         setShowStatusPopup(false);
                                                         setStatusOrderId(null);
@@ -442,47 +548,91 @@ function OrderManager() {
                             )}
                             {showCreateForm && (
                                 <Modal
-                                    title="Tạo đơn hàng mới"
+                                    title={editingOrder ? "Cập nhật đơn hàng" : "Tạo đơn hàng mới"}
                                     open={showCreateForm}
-                                    onOk={handleCreateOrder}
+                                    onOk={handleCreateOrUpdateOrder}
                                     onCancel={resetForm}
                                     width={800}
                                     destroyOnHidden={true}
                                     maskClosable={false}
                                 >
                                     <Form layout="vertical">
-                                        <Form.Item 
+                                        <Form.Item
                                             label="Tên khách hàng"
                                             rules={[{ required: true, message: 'Vui lòng nhập tên khách hàng' }]}
                                         >
-                                            <Input
-                                                value={createFormData.customer_name}
-                                                onChange={e => setCreateFormData(prev => ({
-                                                    ...prev,
-                                                    customer_name: e.target.value
-                                                }))}
-                                                placeholder="Nhập tên khách hàng"
-                                            />
+                                            {matchedUsers.length > 0 ? (
+                                                <Select
+                                                    showSearch
+                                                    style={{ width: '100%' }}
+                                                    placeholder="Chọn tài khoản"
+                                                    onChange={userId => {
+                                                        const user = matchedUsers.find(u => u.id === userId);
+                                                        setSelectedUserId(userId);
+                                                        if (user) {
+                                                            setCreateFormData(prev => ({
+                                                                ...prev,
+                                                                customer_name: user.name
+                                                            }));
+                                                        }
+                                                    }}
+                                                    value={selectedUserId || (matchedUsers.length === 1 ? matchedUsers[0].id : undefined)}
+                                                    optionFilterProp="children"
+                                                    filterOption={(input, option) =>
+                                                        option.children.toLowerCase().includes(input.toLowerCase())
+                                                    }
+                                                >
+                                                    {matchedUsers.map(u => (
+                                                        <Select.Option key={u.id} value={u.id}>
+                                                            {u.name} ({u.email})
+                                                        </Select.Option>
+                                                    ))}
+                                                </Select>
+                                            ) : (
+                                                <Input
+                                                    value={createFormData.customer_name}
+                                                    onChange={e => setCreateFormData(prev => ({
+                                                        ...prev,
+                                                        customer_name: e.target.value
+                                                    }))}
+                                                    placeholder="Nhập tên khách hàng"
+                                                />
+                                            )}
                                         </Form.Item>
 
-                                        <Form.Item 
+                                        <Form.Item
                                             label="Số điện thoại"
                                             rules={[
                                                 { required: true, message: 'Vui lòng nhập số điện thoại' },
                                                 { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' }
-                                        ]}
+                                            ]}
                                         >
                                             <Input
                                                 value={createFormData.customer_phone}
-                                                onChange={e => setCreateFormData(prev => ({
-                                                    ...prev,
-                                                    customer_phone: e.target.value
-                                                }))}
+                                                onChange={e => {
+                                                    const value = e.target.value;
+                                                    setCreateFormData(prev => ({
+                                                        ...prev,
+                                                        customer_phone: value
+                                                    }));
+                                                    // Lọc tất cả user có số trùng
+                                                    const foundUsers = users.filter(u => u.phone === value);
+                                                    setMatchedUsers(foundUsers);
+                                                    if (foundUsers.length === 1) {
+                                                        setSelectedUserId(foundUsers[0].id);
+                                                        setCreateFormData(prev => ({
+                                                            ...prev,
+                                                            customer_name: foundUsers[0].name
+                                                        }));
+                                                    } else {
+                                                        setSelectedUserId(null);
+                                                    }
+                                                }}
                                                 placeholder="Nhập số điện thoại"
                                             />
                                         </Form.Item>
 
-                                        <Form.Item 
+                                        <Form.Item
                                             label="Địa chỉ giao hàng"
                                             rules={[{ required: true, message: 'Vui lòng nhập địa chỉ giao hàng' }]}
                                         >
@@ -501,7 +651,7 @@ function OrderManager() {
                                             <div key={index} className="product-item" style={{ marginBottom: 16 }}>
                                                 <Row gutter={16}>
                                                     <Col span={14}>
-                                                        <Form.Item 
+                                                        <Form.Item
                                                             label="Sản phẩm"
                                                             rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
                                                         >
@@ -517,17 +667,22 @@ function OrderManager() {
                                                                 optionFilterProp="children"
                                                                 style={{ width: '100%' }}
                                                                 notFoundContent="Không tìm thấy sản phẩm"
-                                                            >
-                                                                {Array.isArray(products) && products.map(p => (
-                                                                    <Select.Option key={p.id} value={p.id}>
-                                                                        {p.name} - {Number(p.price).toLocaleString('vi-VN')}đ
-                                                                    </Select.Option>
-                                                                ))}
+                                                            >                                                                {Array.isArray(products) && products
+                                                                    .filter(p =>
+                                                                        // Chỉ hiển thị sản phẩm chưa được chọn ở dòng khác hoặc là chính dòng này
+                                                                        !createFormData.products.some((item, idx2) => item.product_id === p.id && idx2 !== index)
+                                                                    )
+                                                                    .map(p => (
+                                                                        <Select.Option key={p.id} value={p.id}>
+                                                                            {p.name} - {Number(p.price).toLocaleString('vi-VN')}đ - Còn {p.quantity || 0} sản phẩm
+                                                                        </Select.Option>
+                                                                    ))
+                                                                }
                                                             </Select>
                                                         </Form.Item>
                                                     </Col>
                                                     <Col span={3}>
-                                                        <Form.Item 
+                                                        <Form.Item
                                                             label="Số lượng"
                                                             rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
                                                         >
@@ -541,8 +696,8 @@ function OrderManager() {
                                                     </Col>
                                                     <Col span={4}>
                                                         <Form.Item label="Thành tiền">
-                                                            <div style={{ 
-                                                                lineHeight: '32px', 
+                                                            <div style={{
+                                                                lineHeight: '32px',
                                                                 color: '#1890ff',
                                                                 fontSize: '16px',
                                                                 fontWeight: 500
@@ -552,21 +707,21 @@ function OrderManager() {
                                                         </Form.Item>
                                                     </Col>
                                                     <Col span={1}>
-                                                        <Button 
+                                                        <Button
                                                             danger
                                                             icon={<DeleteOutlined />}
                                                             onClick={() => handleRemoveProduct(index)}
                                                             style={{ marginTop: 29 }}
-                                                            // disabled={createFormData.products.length === 1}
+                                                        // disabled={createFormData.products.length === 1}
                                                         />
                                                     </Col>
                                                 </Row>
                                             </div>
                                         ))}
 
-                                        <Button 
-                                            type="dashed" 
-                                            onClick={handleAddProduct} 
+                                        <Button
+                                            type="dashed"
+                                            onClick={handleAddProduct}
                                             block
                                             icon={<PlusOutlined />}
                                         >
@@ -614,8 +769,8 @@ function OrderManager() {
                         background: '#fff', padding: 24, borderRadius: 10, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', alignItems: 'center'
                     }}>
                         <h5>Đổi trạng thái đơn hàng</h5>
-                        <div style={{marginBottom: 8}}>
-                          <b>Mã đơn hàng:</b> {statusOrderId}
+                        <div style={{ marginBottom: 8 }}>
+                            <b>Mã đơn hàng:</b> {statusOrderId}
                         </div>
                         <select
                             value={newStatus}
@@ -632,7 +787,9 @@ function OrderManager() {
                                 onClick={async () => {
                                     setSavingStatusId(statusOrderId);
                                     try {
-                                        await OrderApi.updateOrderStatus(statusOrderId, newStatus);
+                                        // Chuyển trạng thái hiển thị sang trạng thái API
+                                        const apiStatus = STATUS_MAP[newStatus] || 'pending';
+                                        await OrderApi.updateOrderStatus(statusOrderId, apiStatus);
                                         toast.success('Cập nhật trạng thái thành công');
                                         setShowStatusPopup(false);
                                         setStatusOrderId(null);
@@ -653,7 +810,7 @@ function OrderManager() {
                             position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
                         }} title="Đóng">&times;</span>
                     </div>
-                </div>            )}
+                </div>)}
         </div>
     );
 }

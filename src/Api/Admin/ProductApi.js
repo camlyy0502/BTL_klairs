@@ -40,6 +40,45 @@ const ProductAdminApi = {
         throw error;
         }
     },
+    
+
+  addProduct: async (formData) => {
+    try {
+      const response = await axiosClient.post('/api/admin/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  updateProduct: async (formData) => {
+    try {
+      const response = await axiosClient.put(`/api/admin/products/${formData.get('product_id')}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  deleteProduct: async (id) => {
+    try {
+      const response = await axiosClient.delete(`/api/admin/products/${id}`);
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
 };
 
 export default ProductAdminApi;
