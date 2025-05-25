@@ -70,6 +70,16 @@ const ProductAdminApi = {
     }
   },
 
+  updateProductQuantity: async (id, body) => {
+    try {
+      const response = await axiosClient.put(`/api/admin/products/${id}/quantity`, body);
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
   deleteProduct: async (id) => {
     try {
       const response = await axiosClient.delete(`/api/admin/products/${id}`);

@@ -24,4 +24,27 @@
     border-radius: 15px;
     word-wrap: break-word;
     position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-content {
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.message-time {
+    font-size: 0.75em !important;
+    color: #666 !important;
+    margin-top: 4px;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.mineadmin .message-time {
+    text-align: right;
+}
+
+.theirsadmin .message-time {
+    text-align: left;
 }

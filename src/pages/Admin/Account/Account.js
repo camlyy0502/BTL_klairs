@@ -7,13 +7,14 @@ import { toast } from 'react-toastify';
 function Account() {
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
-
-    const openForm = (user) => {
-        setSelectedUser(user);
-        setIsFormVisible(true);
-    };
-
     const [users, setUsers] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [usersPerPage] = useState(10);
+
     const fetchUsers = async () => {
         try {
             const response = await AdminApi.listAccount();
@@ -23,22 +24,8 @@ function Account() {
         }
     };
 
-    const [roles, setRoles] = useState([]);
-
-    const [currentUser, setCurrentUser] = useState(null);
-
-    const [filteredUsers, setFilteredUsers] = useState([]);
-
     // Lấy danh sách tài khoản
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await AdminApi.listAccount();
-                setUsers(response);
-            } catch (error) {
-                console.error('Error fetching users:', error);
-            }
-        };
         fetchUsers();
     }, []);
 
@@ -53,7 +40,8 @@ function Account() {
         };
         fetchRoles();
     }, []);
-    // Lấy user hiện tại (giả sử có API hoặc localStorage lưu user)
+
+    // Lấy user hiện tại
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
@@ -95,113 +83,196 @@ function Account() {
         }
     }, [users, currentUser, roles]);
 
-    // Đóng form
+    // Tìm kiếm và phân trang
+    const searchResults = filteredUsers.filter(user =>
+        Object.values(user).some(value =>
+            String(value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+    );
+
+    // Lấy users cho trang hiện tại
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = searchResults.slice(indexOfFirstUser, indexOfLastUser);
+
+    // Đổi trang
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    // Reset về trang 1 khi tìm kiếm
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const openForm = (user) => {
+        setSelectedUser(user);
+        setIsFormVisible(true);
+    };
+
     const closeForm = () => {
+        setSelectedUser(null);
         setIsFormVisible(false);
     };
+
     return (
-        <div>
-            <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingLeft: '4px' }}>
-                <div className="container supplier pt-3">
-                    <button type="button" className="btn btn-success" onClick={() => {
-                        setSelectedUser(null);
-                        setIsFormVisible(true);
-                    }}>Thêm</button>
-                    {isFormVisible && (
-                        <>
-                            <div className="overLay"></div>
-                            {selectedUser ? (
-                                <UserDetailPopup user={selectedUser} roles={roles} onClose={closeForm} onRoleChange={() => window.location.reload()} currentUser={currentUser} />
-                            ) : (
-                                <AccountForm onClose={closeForm} onCreated={fetchUsers} />
-                            )}
-                        </>
-                    )}
-                </div>
-                <div className='container pt-4'>
-                    <table className="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Số điện thoại</th>
-                                <th>Roles</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredUsers.map((user, index) => (
-                                <tr key={user.id || index}>
-                                    <td>{index+1}</td>
-                                    <td>{user.username}</td>
-                                    <td>{user.email}</td>
-                                    <td>{user.phone}</td>
-                                    <td>
-                                        {Array.isArray(user.roles)
-                                          ? user.roles.map((roleId, idx) => {
-                                              const found = roles.find(r => r.id === roleId);
-                                              return found ? (
-                                                <span key={roleId} style={{ marginRight: 4 }}>
-                                                  {found.name}{idx < user.roles.length - 1 ? ', ' : ''}
-                                                </span>
-                                              ) : null;
-                                            })
-                                          : (() => {
-                                              const found = roles.find(r => r.id === user.roles);
-                                              return found ? found.name : user.roles;
-                                            })()}
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn btn-warning btn-sm mr-2"
-                                            onClick={() => openForm(user)}
-                                        >Chi tiết</button>
-                                        {/* <button
-                                            className="btn btn-warning btn-sm mr-2"
-                                            onClick={() => openForm(user)}
-                                        >Sửa</button> */}
-                                        {(() => {
-                                            const userRoleNames = Array.isArray(user.roles)
-                                                ? user.roles.map(roleId => {
-                                                    const found = roles.find(r => r.id === roleId);
-                                                    return found ? found.name : roleId;
-                                                })
-                                                : [(() => {
-                                                    const found = roles.find(r => r.id === user.roles);
-                                                    return found ? found.name : user.roles;
-                                                })()];
-                                                console.log('currentUser', currentUser.roles);
-                                            if (!userRoleNames.includes('CUSTOMER') && !userRoleNames.includes('ADMIN') && currentUser.roles.includes('ADMIN')) {
-                                                return (
+        <div className="container-fluid">
+            <div className="row">
+                <div className="col-md-12">
+                    <div className="card">
+                        <div className="card-header d-flex justify-content-between align-items-center">
+                            <h5 className="card-title mb-0">Quản lý tài khoản</h5>
+                            <div className="d-flex gap-2">
+                                <div className="search-box">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Tìm kiếm tài khoản..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        setSelectedUser(null);
+                                        setIsFormVisible(true);
+                                    }}
+                                >
+                                    Thêm tài khoản mới
+                                </button>
+                            </div>
+                        </div>
+                        <div className="card-body">
+                            <div className="table-responsive">
+                                <table className="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Tên người dùng</th>
+                                            <th>Email</th>
+                                            <th>Số điện thoại</th>
+                                            <th>Vai trò</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {currentUsers.map((user, index) => (
+                                            <tr key={user.id || index}>
+                                                <td>{(currentPage - 1) * usersPerPage + index + 1}</td>
+                                                <td>{user.username}</td>
+                                                <td>{user.email}</td>
+                                                <td>{user.phone}</td>
+                                                <td>
+                                                    {Array.isArray(user.roles)
+                                                        ? user.roles.map((roleId, idx) => {
+                                                            const found = roles.find(r => r.id === roleId);
+                                                            return found ? (
+                                                                <span key={roleId} style={{ marginRight: 4 }}>
+                                                                    {found.name}{idx < user.roles.length - 1 ? ', ' : ''}
+                                                                </span>
+                                                            ) : null;
+                                                        })
+                                                        : (() => {
+                                                            const found = roles.find(r => r.id === user.roles);
+                                                            return found ? found.name : user.roles;
+                                                        })()}
+                                                </td>
+                                                <td>
                                                     <button
-                                                        style={{ marginLeft: '8px' }}
-                                                        className="btn btn-danger btn-sm"
-                                                        onClick={async () => {
-                                                            if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản này?')) {
-                                                                try {
-                                                                    await AdminApi.deleteAccount(user.id);
-                                                                    toast.success('Xóa tài khoản thành công!');
-                                                                } catch {
-                                                                    toast.error('Xóa tài khoản thất bại!');
-                                                                }
-                                                                fetchUsers();
-                                                            }
-                                                        }}
-                                                    >Xóa</button>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                                        className="btn btn-warning btn-sm me-2"
+                                                        onClick={() => openForm(user)}
+                                                    >Chi tiết</button>
+                                                    {(() => {
+                                                        const userRoleNames = Array.isArray(user.roles)
+                                                            ? user.roles.map(roleId => {
+                                                                const found = roles.find(r => r.id === roleId);
+                                                                return found ? found.name : roleId;
+                                                            })
+                                                            : [(() => {
+                                                                const found = roles.find(r => r.id === user.roles);
+                                                                return found ? found.name : user.roles;
+                                                            })()];
+                                                        if (!userRoleNames.includes('CUSTOMER') && !userRoleNames.includes('ADMIN') && currentUser.roles.includes('ADMIN')) {
+                                                            return (
+                                                                <button
+                                                                    className="btn btn-danger btn-sm"
+                                                                    onClick={async () => {
+                                                                        if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản này?')) {
+                                                                            try {
+                                                                                await AdminApi.deleteAccount(user.id);
+                                                                                toast.success('Xóa tài khoản thành công!');
+                                                                            } catch {
+                                                                                toast.error('Xóa tài khoản thất bại!');
+                                                                            }
+                                                                            fetchUsers();
+                                                                        }
+                                                                    }}
+                                                                >Xóa</button>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {searchResults.length > usersPerPage && (
+                                <div className="d-flex justify-content-center mt-4">
+                                    <nav>
+                                        <ul className="pagination">
+                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                                <button 
+                                                    className="page-link" 
+                                                    onClick={() => paginate(currentPage - 1)}
+                                                    disabled={currentPage === 1}
+                                                >
+                                                    Trước
+                                                </button>
+                                            </li>
+                                            {Array.from({ length: Math.ceil(searchResults.length / usersPerPage) }).map((_, index) => (
+                                                <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                                                    <button className="page-link" onClick={() => paginate(index + 1)}>
+                                                        {index + 1}
+                                                    </button>
+                                                </li>
+                                            ))}
+                                            <li className={`page-item ${currentPage === Math.ceil(searchResults.length / usersPerPage) ? 'disabled' : ''}`}>
+                                                <button 
+                                                    className="page-link" 
+                                                    onClick={() => paginate(currentPage + 1)}
+                                                    disabled={currentPage === Math.ceil(searchResults.length / usersPerPage)}
+                                                >
+                                                    Sau
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            {isFormVisible && (
+                <>
+                    <div className="modal-backdrop fade show"></div>
+                    {selectedUser ? (
+                        <UserDetailPopup 
+                            user={selectedUser} 
+                            roles={roles} 
+                            onClose={closeForm} 
+                            onRoleChange={() => window.location.reload()} 
+                            currentUser={currentUser} 
+                        />
+                    ) : (
+                        <AccountForm onClose={closeForm} onCreated={fetchUsers} />
+                    )}
+                </>
+            )}
         </div>
-    )
+    );
 }
 
 function UserDetailPopup({ user, roles, onClose, onRoleChange, currentUser }) {
@@ -215,31 +286,17 @@ function UserDetailPopup({ user, roles, onClose, onRoleChange, currentUser }) {
             });
         }
     }, [user]);
-    // const roleNames = Array.isArray(user.roles)
-    //     ? user.roles.map(roleId => {
-    //         const found = roles.find(r => r.id === roleId);
-    //         return found ? found.name : roleId;
-    //     }).join(', ')
-    //     : (() => {
-    //         const found = roles.find(r => r.id === user.roles);
-    //         return found ? found.name : user.roles;
-    //     })();
+
     const defaultAddress = addresses.find(addr => addr.is_default);
     const isCustomer = Array.isArray(user.roles)
-    ? user.roles.some(roleId => {
-        const found = roles.find(r => r.id === roleId);
-        return (found ? found.name : roleId) === 'CUSTOMER';
-      })
-    : (() => {
-        const found = roles.find(r => r.id === user.roles);
-        return (found ? found.name : user.roles) === 'CUSTOMER';
-      })();
-    // const [selectedRole, setSelectedRole] = React.useState(user.roles && Array.isArray(user.roles) ? user.roles[0] : user.roles);
-    // const [isUpdating, setIsUpdating] = React.useState(false);
-    // const canEditRole = currentUser && (Array.isArray(currentUser.roles)
-    //     ? currentUser.roles.some(r => (typeof r === 'string' ? r : r.name) === 'ADMIN')
-    //     : (typeof currentUser.roles === 'string' ? currentUser.roles : currentUser.roles?.name) === 'ADMIN');
-    //   console.log('user', user);
+        ? user.roles.some(roleId => {
+            const found = roles.find(r => r.id === roleId);
+            return (found ? found.name : roleId) === 'CUSTOMER';
+        })
+        : (() => {
+            const found = roles.find(r => r.id === user.roles);
+            return (found ? found.name : user.roles) === 'CUSTOMER';
+        })();
 
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 2001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -253,40 +310,19 @@ function UserDetailPopup({ user, roles, onClose, onRoleChange, currentUser }) {
                         ? user.roles.map((roleId, idx) => {
                             const found = roles.find(r => r.id === roleId);
                             return found ? (
-                              <span key={roleId} style={{ marginRight: 4 }}>
-                                {found.name}{idx < user.roles.length - 1 ? ', ' : ''}
-                              </span>
+                                <span key={roleId} style={{ marginRight: 4 }}>
+                                    {found.name}{idx < user.roles.length - 1 ? ', ' : ''}
+                                </span>
                             ) : null;
-                          })
+                        })
                         : (() => {
                             const found = roles.find(r => r.id === user.roles);
                             return found ? found.name : user.roles;
-                          })()
+                        })()
                 }
-                {/* {canEditRole ? (
-                  <span>
-                    <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} disabled={isUpdating}>
-                      {roles.map(r => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
-                    <button className="btn btn-primary btn-sm ml-2" disabled={isUpdating} onClick={async () => {
-                      setIsUpdating(true);
-                      try {
-                        await AdminApi.changeRoleUser(user.id, { role_id: selectedRole });
-                        toast.success('Cập nhật role thành công!');
-                        if (onRoleChange) onRoleChange();
-                      } catch {
-                        toast.error('Cập nhật role thất bại!');
-                      } finally {
-                        setIsUpdating(false);
-                      }
-                    }}>Lưu</button>
-                  </span>
-                ) : roleNames} */}
                 </p>
                 {isCustomer && (
-                  <p><b>Địa chỉ mặc định:</b> {defaultAddress ? `${defaultAddress.address_line}` : 'Chưa có'}</p>
+                    <p><b>Địa chỉ mặc định:</b> {defaultAddress ? `${defaultAddress.address_line}` : 'Chưa có'}</p>
                 )}
                 <button className="btn btn-secondary mt-2" onClick={onClose}>Đóng</button>
                 <span onClick={onClose} style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }} title="Đóng">&times;</span>
@@ -295,4 +331,4 @@ function UserDetailPopup({ user, roles, onClose, onRoleChange, currentUser }) {
     );
 }
 
-export default Account
+export default Account;

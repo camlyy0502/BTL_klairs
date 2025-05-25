@@ -26,6 +26,12 @@ function Chat() {
 
     const [users, setUserHaveChat] = useState([]);
     const [userList, setUserList] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Filter userList based on search term
+    const filteredUserList = userList.filter(user => 
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     useEffect(() => {
         const getUserHaveChat = async () => {
@@ -60,12 +66,15 @@ function Chat() {
 
     const [username, setUsername] = useState('');
     const stompClientAdminRef = useRef(null);
-    const [isWSConnected, setIsWSConnected] = useState(false);
-
-    const sendMessageWS = () => {
+    const [isWSConnected, setIsWSConnected] = useState(false);    const sendMessageWS = () => {
         const stompClientAdmin = stompClientAdminRef.current;
         if (!stompClientAdmin) {
             console.warn('STOMP client is not connected yet');
+            return;
+        }
+
+        // Kiểm tra input có nội dung không
+        if (!input.trim()) {
             return;
         }
 
@@ -83,13 +92,21 @@ function Chat() {
         // Immediately append the sent message to the chat
         setMessagesMap(prev => {
             const prevMsgs = prev[username] || [];
-            const newMsgs = [...prevMsgs, { id: prevMsgs.length + 1, message: input, sender: userData.username }];
+            const newMsgs = [...prevMsgs, { 
+                id: prevMsgs.length + 1, 
+                message: input, 
+                sender: userData.username,
+                sent_at: new Date().toISOString() // Thêm thời gian cho tin nhắn mới
+            }];
             setMessages(newMsgs);
             return {
                 ...prev,
                 [username]: newMsgs
             };
         });
+
+        // Xóa input sau khi gửi tin nhắn
+        setInput('');
 
         setInput('');
     };
@@ -154,13 +171,17 @@ function Chat() {
                         } catch (error) {
                             console.error("Failed to reload user list:", error);
                         }
-                    }
-                    // Update messagesMap for this user
+                    }                    // Update messagesMap for this user
                     setMessagesMap(prev => {
                         const prevMsgs = prev[user.email] || [];
                         return {
                             ...prev,
-                            [user.email]: [...prevMsgs, { id: prevMsgs.length + 1, message: payload.message, sender: payload.sender }]
+                            [user.email]: [...prevMsgs, { 
+                                id: prevMsgs.length + 1, 
+                                message: payload.message, 
+                                sender: payload.sender,
+                                sent_at: new Date().toISOString() // Thêm thời gian cho tin nhắn nhận được
+                            }]
                         };
                     });
                     // If not currently selected user, increment unread count and move to top
@@ -237,13 +258,36 @@ function Chat() {
             <div className="row chat-box w-100">
                 <div className="col-3 user-list">
                     <div style={{ borderBottom: '1px solid #ddd', padding: '10px 0' }}>
-                        <div className='search' style={{ marginLeft: '12px' }}>
-                            <input type="text" placeholder="Search" style={{ outline: 'none', border: 'none', position: 'relative', background: '#c4daf3' }}></input>
-                            <span style={{ color: '#62677399', position: 'absolute', left: '520px' }}><i class="fas fa-search"></i></span>
+                        <div className='search position-relative'>
+                            <input 
+                                type="text" 
+                                className="form-control"
+                                placeholder="Tìm kiếm người dùng..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{ 
+                                    paddingRight: '30px',
+                                    paddingLeft: '12px',
+                                    background: '#c4daf3',
+                                    border: 'none',
+                                    borderRadius: '20px',
+                                    height: '36px'
+                                }}
+                            />
+                            <i 
+                                className="fas fa-search" 
+                                style={{ 
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    color: '#62677399'
+                                }}
+                            ></i>
                         </div>
                     </div>
-                    <ul className="list-group mt-4 ">
-                        {userList.map((user) => (
+                    <ul className="list-group mt-4">
+                        {filteredUserList.map((user) => (
                             <li key={user.id} 
                                 className={`list-group-item ${selectedUser === user.id ? "active" : ""}`} 
                                 onClick={() => {
@@ -267,18 +311,63 @@ function Chat() {
                             <img src={(users.find((u) => u.id === selectedUser)?.avatar) || "https://smilemedia.vn/wp-content/uploads/2023/07/tao-dang-chup-anh-hoang-hon-7.jpeg"} alt="avatar" className="avatar" />
                         )}
                         {selectedUser ? users.find((u) => u.id === selectedUser)?.email : "Chọn người để chat"}
-                    </div>
-                    <div className="chat-body" ref={chatRef}>
-                        {messages.map((msg, index) => (
-                            <div key={index}  className={`messageuadmin messageadmin ${msg.sender} ${msg.sender === selectedUserEmail ? "mineadmin" : "theirsadmin"}`} >
-                                {msg.message}
-                            </div>
-                        ))}
-                    </div>
-                    {selectedUser && (
+                    </div>                    <div className="chat-body" ref={chatRef}>
+                        {messages.map((msg, index) => {
+                            // Xử lý thời gian tin nhắn
+                            let displayTime = '';
+                            if (msg.sent_at) {
+                                const messageDate = new Date(msg.sent_at);
+                                const today = new Date();
+                                const yesterday = new Date(today);
+                                yesterday.setDate(yesterday.getDate() - 1);
+                                
+                                const timeString = messageDate.toLocaleTimeString('vi-VN', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit'
+                                });
+                                
+                                if (messageDate.toDateString() === today.toDateString()) {
+                                    displayTime = timeString; // Hôm nay chỉ hiển thị giờ
+                                } else if (messageDate.toDateString() === yesterday.toDateString()) {
+                                    displayTime = `Hôm qua ${timeString}`; // Hôm qua
+                                } else {
+                                    const dateString = messageDate.toLocaleDateString('vi-VN');
+                                    displayTime = `${dateString} ${timeString}`; // Ngày khác
+                                }
+                            } else {
+                                displayTime = 'Vừa xong'; // Tin nhắn mới không có thời gian
+                            }
+
+                            return (
+                                <div key={index} className={`messageuadmin messageadmin ${msg.sender} ${msg.sender === selectedUserEmail ? "mineadmin" : "theirsadmin"}`}>
+                                    <div className="message-content">{msg.message}</div>
+                                    <div className="message-time" style={{fontSize: '0.75em', color: '#888', marginTop: '4px'}}>
+                                        {displayTime}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>                    {selectedUser && (
                         <div className="chat-footer">
-                            <input type="text" className="form-control" placeholder="Nhập tin nhắn..." value={input} onChange={(e) => setInput(e.target.value)} />
-                            <button className="btn btn-primary" onClick={sendMessageWS}>Gửi</button>
+                            <input 
+                                type="text" 
+                                className="form-control" 
+                                placeholder="Nhập tin nhắn..." 
+                                value={input} 
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && input.trim()) {
+                                        sendMessageWS();
+                                    }
+                                }}
+                            />
+                            <button 
+                                className="btn btn-primary" 
+                                onClick={sendMessageWS}
+                                disabled={!input.trim()}
+                            >
+                                Gửi
+                            </button>
                         </div>
                     )}
                 </div>
