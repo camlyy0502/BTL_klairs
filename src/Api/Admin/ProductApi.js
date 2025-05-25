@@ -56,9 +56,9 @@ const ProductAdminApi = {
     }
   },
 
-  updateProduct: async (formData) => {
+  updateProduct: async (id, formData) => {
     try {
-      const response = await axiosClient.put(`/api/admin/products/${formData.get('product_id')}`, formData, {
+      const response = await axiosClient.put(`/api/admin/products/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

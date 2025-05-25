@@ -28,11 +28,20 @@ function BotScenariosPage() {
     }
     fetchScenarios();
   }, []);
-
   const showModal = (record = null) => {
     setEditing(record);
-    form.setFieldsValue(record || { enabled: true, minReplyTime: globalMinReplyTime });
+    form.setFieldsValue(record || { 
+      enabled: true, 
+      minReplyTime: globalMinReplyTime,
+      response_type: 'TEXT' // Set default value
+    });
     setModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    form.resetFields();
+    setEditing(null);
+    setModalVisible(false);
   };
 
   const handleOk = async () => {
@@ -91,12 +100,12 @@ function BotScenariosPage() {
   }, [botEnabled, globalMinReplyTime]);
 
   const columns = [
-    { title: "Keyword", dataIndex: "keyword" },
-    { title: "Response", dataIndex: "response" },
-    { title: "Response Type", dataIndex: "responseType" },
-    { title: "Enabled", dataIndex: "enabled", render: v => (v ? "Bật" : "Tắt") },
+    { title: "Từ khóa", dataIndex: "keyword" },
+    { title: "Câu trả lời", dataIndex: "response" },
+    { title: "Kiểu trả lời", dataIndex: "response_type" },
+    // { title: "Trạng thái", dataIndex: "enabled", render: v => (v ? "Bật" : "Tắt") },
     {
-      title: "Actions",
+      title: "Thao tác",
       render: (_, record) => (
         <>
           <Button onClick={() => showModal(record)} type="link">Sửa</Button>
@@ -121,12 +130,11 @@ function BotScenariosPage() {
       </Row>
       <Divider />
       <Button type="primary" onClick={() => showModal()}>Thêm mới kịch bản</Button>
-      <Table rowKey="id" columns={columns} dataSource={scenarios} style={{ marginTop: 16 }} />
-      <Modal
+      <Table rowKey="id" columns={columns} dataSource={scenarios} style={{ marginTop: 16 }} />      <Modal
         title={editing ? "Chỉnh sửa kịch bản" : "Thêm mới kịch bản"}
         open={modalVisible}
         onOk={handleOk}
-        onCancel={() => setModalVisible(false)}
+        onCancel={handleCancel}
         destroyOnClose
       >
         <Form form={form} layout="vertical">
