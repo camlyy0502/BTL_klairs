@@ -31,6 +31,8 @@ function ProductManager() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(null);
 
   // Thêm state cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -122,16 +124,15 @@ function ProductManager() {
     e.preventDefault();
     try {
       const formData = new FormData();
-      
-      // Create product JSON data
+        // Create product JSON data
       const productData = {
         name: form.name,
         price: form.price,
         quantity: form.quantity || 0,
         short_description: form.short_description,
         long_description: form.long_description,
-        origin: form.origin,
-        // category_id: form.category_id
+        origin: "Xuất xứ: " + form.origin,
+        category_id: form.category_id
       };
       
       // Append the product JSON
@@ -142,14 +143,14 @@ function ProductManager() {
         formData.append('thumb', form.thumbnail);
       }
 
-      if (editId) {
-        formData.append('product_id', editId);
-        await ProductApi.updateProduct(formData);
-        toast.success('Cập nhật sản phẩm thành công');
-      } else {
-        await ProductApi.addProduct(formData);
-        toast.success('Thêm sản phẩm thành công');
-      }
+      // if (editId) {
+      //   // formData.append('product_id', editId);
+      //   await ProductApi.updateProduct(editId, formData);
+      //   toast.success('Cập nhật sản phẩm thành công');
+      // } else {
+      // }
+      await ProductApi.addProduct(formData);
+      toast.success('Thêm sản phẩm thành công');
       setShowForm(false);
       fetchProducts();
     } catch (e) {
@@ -234,14 +235,30 @@ function ProductManager() {
         toast.error('Không thể lấy thông tin sản phẩm');
     }
   };
-
   const handleEditProduct = async (productId) => {
     try {
         const product = await ProductApi.getDetailProduct(productId);
+        console.log(product.product);
         setEditingProduct(product.product); // hoặc set state để fill form sửa
         setShowEditModal(true);
     } catch (error) {
         toast.error('Không thể lấy thông tin sản phẩm');
+    }
+  };
+  const handleDelete = (productId) => {
+    setDeletingProduct(productId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await ProductApi.deleteProduct(deletingProduct);
+      toast.success('Xóa sản phẩm thành công');
+      setShowDeleteModal(false);
+      setDeletingProduct(null);
+      fetchProducts(); // Refresh the products list
+    } catch (error) {
+      toast.error('Không thể xóa sản phẩm');
     }
   };
 
@@ -346,6 +363,9 @@ function ProductManager() {
                         </button>
                         <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowPriceForm(product); }}>
                           <i className="fas fa-dollar-sign me-2"></i>Cập nhật giá
+                        </button>                        
+                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleDelete(product.id); }}>
+                          <i className="fas fa-trash me-2"></i>Xóa
                         </button>
                       </div>
                     )}
@@ -594,25 +614,30 @@ function ProductManager() {
               try {
                 const formData = new FormData();
                 const productData = {
-                  name: editingProduct.name,
-                  price: editingProduct.price,
-                  quantity: editingProduct.quantity,
-                  short_description: editingProduct.short_description,
-                  long_description: editingProduct.long_description,
-                  origin: editingProduct.origin,
-                  category_id: editingProduct.category_id
+                  name: form.name,
+                  price: form.price,
+                  quantity: form.quantity || 0,
+                  short_description: form.short_description,
+                  long_description: form.long_description,
+                  origin: "Xuất xứ: " + form.origin,
+                  category_id: form.category_id
                 };
+                
+                // Append the product JSON
                 formData.append('product', JSON.stringify(productData));
-                if (editingProduct.thumbnail instanceof File) {
-                  formData.append('thumb', editingProduct.thumbnail);
-                }
-                formData.append('product_id', editingProduct.product_id);
-                await ProductApi.updateProduct(formData);
+                
+                // Append the thumbnail
+                formData.append('thumb', form.thumbnail);
+                // if (form.thumbnail) {
+                // }
+                await ProductApi.updateProduct(editingProduct.id, formData);
+
                 toast.success('Cập nhật sản phẩm thành công');
                 setShowEditModal(false);
                 fetchProducts();
               } catch (e) {
                 toast.error('Cập nhật sản phẩm thất bại');
+                console.error('Update error:', e);
               }
             }}
             style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 600, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}
@@ -674,6 +699,20 @@ function ProductManager() {
               position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
             }} title="Đóng">&times;</span>
           </form>
+        </div>      )}
+      {showDeleteModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 400, position: 'relative' }}>
+            <h5>Xác nhận xóa sản phẩm</h5>
+            <p>Bạn có chắc chắn muốn xóa sản phẩm này?</p>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingProduct(null);
+              }}>Hủy</button>
+              <button className="btn btn-danger" onClick={confirmDelete}>Xóa</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
