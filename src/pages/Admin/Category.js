@@ -123,8 +123,8 @@ function Category() {
           <form onSubmit={handleFormSubmit} style={{
             background: '#fff', padding: 24, borderRadius: 10, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative'
           }}>
-            <h5>{editId ? 'Sửa loại sản phẩm' : 'Thêm loại sản phẩm'}</h5>
-            <input name="name" value={form.name} onChange={handleFormChange} placeholder="Tên loại sản phẩm" required />
+            <h5>{editId ? 'Sửa danh mục' : 'Thêm danh mục'}</h5>
+            <input name="name" value={form.name} onChange={handleFormChange} placeholder="Tên danh mục" required />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button type="submit" className="btn btn-success">Lưu</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Hủy</button>

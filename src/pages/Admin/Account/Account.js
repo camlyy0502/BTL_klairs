@@ -125,6 +125,7 @@ function Account() {
                                 <th>STT</th>
                                 <th>Username</th>
                                 <th>Email</th>
+                                <th>Số điện thoại</th>
                                 <th>Roles</th>
                                 <th>Hành động</th>
                             </tr>
@@ -135,6 +136,7 @@ function Account() {
                                     <td>{index+1}</td>
                                     <td>{user.username}</td>
                                     <td>{user.email}</td>
+                                    <td>{user.phone}</td>
                                     <td>
                                         {Array.isArray(user.roles)
                                           ? user.roles.map((roleId, idx) => {
@@ -169,7 +171,8 @@ function Account() {
                                                     const found = roles.find(r => r.id === user.roles);
                                                     return found ? found.name : user.roles;
                                                 })()];
-                                            if (!userRoleNames.includes('CUSTOMER') && !userRoleNames.includes('ADMIN')) {
+                                                console.log('currentUser', currentUser.roles);
+                                            if (!userRoleNames.includes('CUSTOMER') && !userRoleNames.includes('ADMIN') && currentUser.roles.includes('ADMIN')) {
                                                 return (
                                                     <button
                                                         style={{ marginLeft: '8px' }}

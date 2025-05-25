@@ -4,6 +4,7 @@ import DashboardApi from "../../../Api/Product/DashboardApi";
 import { toast } from 'react-toastify';
 import { useCart } from '../../../contexts/CartContext';
 import { getFullImageUrl } from '../../../utils/imageUrl';
+import ProductItem from "./ProductItem";
 
 function ProductDetails() {
     const { productId } = useParams();
@@ -220,6 +221,47 @@ function ProductDetails() {
                         )}
                     </div>
             </div>
+            <div className="mt-5">
+                    <h4>SẢN PHẨM TƯƠNG TỰ</h4>
+                    <div className='mt-4 row '>
+                        <div className='col-md-3 product-container'>
+                            <ProductItem
+                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/serum-duong-trang-da-klairs-600x600.jpg'
+                                productPrice='400.000'
+                                productName='Serum Vitamin C dưỡng trắng da Klairs Freshly Jucied Vitamin Drop Serum'
+                                productPriceSale='300.000'
+                                sale='25'
+                            ></ProductItem>
+                        </div>
+                        <div className='col-md-3 product-container'>
+                            <ProductItem
+                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/kem-chong-nang-klairs-1.jpg'
+                                productPrice='400.000'
+                                productName='Kem chống nắng bảo vệ da Klairs Soft Airi UV Essence Spf 50 PA++'
+                                productPriceSale='300.000'
+                                sale='25'
+                            ></ProductItem>
+                        </div>
+                        <div className='col-md-3 product-container'>
+                            <ProductItem
+                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/Klairs-Rich-Moist-Soothing-Cream-600x600.jpg'
+                                productPrice='400.000'
+                                productName='Kem dưỡng ẩm Klairs Rich Moist Soothing Cream'
+                                productPriceSale='300.000'
+                                sale='25'
+                            ></ProductItem>
+                        </div>
+                        <div className='col-md-3 product-container'>
+                            <ProductItem
+                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/Klairs-Rich-Moist-Soothing-Serum-600x600.jpg'
+                                productPrice='400.000'
+                                productName='Serum dưỡng ẩm Klairs Rich Moist Soothing Serum'
+                                productPriceSale='300.000'
+                                sale='25'
+                            ></ProductItem>
+                        </div>
+                    </div>
+                </div>
         </div>
     );
 }

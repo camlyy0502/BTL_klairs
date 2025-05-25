@@ -93,8 +93,8 @@ function BotScenariosPage() {
   const columns = [
     { title: "Keyword", dataIndex: "keyword" },
     { title: "Response", dataIndex: "response" },
-    { title: "Response Type", dataIndex: "responseType" },
-    { title: "Enabled", dataIndex: "enabled", render: v => (v ? "Bật" : "Tắt") },
+    { title: "Response Type", dataIndex: "response_type" },
+    // { title: "Enabled", dataIndex: "enabled", render: v => (v ? "Bật" : "Tắt") },
     {
       title: "Actions",
       render: (_, record) => (

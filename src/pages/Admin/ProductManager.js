@@ -344,9 +344,9 @@ function ProductManager() {
                         <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowQuantityForm(product); }}>
                           <i className="fas fa-box me-2"></i>Cập nhật số lượng
                         </button>
-                        <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowPriceForm(product); }}>
+                        {/* <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleShowPriceForm(product); }}>
                           <i className="fas fa-dollar-sign me-2"></i>Cập nhật giá
-                        </button>
+                        </button> */}
                       </div>
                     )}
                   </td>
@@ -498,7 +498,7 @@ function ProductManager() {
               onChange={handleQuantityChange} 
               placeholder="Số lượng mới" 
               type="number"
-              min="0"
+              min="1"
               step="1"
               required 
             />
@@ -648,12 +648,12 @@ function ProductManager() {
               <input className="form-control" name="price" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} type="number" required />
             </div>
             {/* XÓA hoặc COMMENT trường số lượng ở đây */}
-            {/* 
+            
             <div className="form-group">
               <label>Số lượng</label>
               <input className="form-control" name="quantity" value={editingProduct.quantity} onChange={e => setEditingProduct({ ...editingProduct, quantity: e.target.value })} type="number" min="0" required />
             </div>
-            */}
+           
             <div className="form-group">
               <label>Hình ảnh</label>
               <input className="form-control" type="file" name="thumbnail" onChange={e => {

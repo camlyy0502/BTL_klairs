@@ -145,9 +145,9 @@ function Home() {
 
     return (
         <div className="p-3" style={{ background: "#fff", minHeight: "100vh" }}>
-            <div className="border-bottom">
+            {/* <div className="border-bottom">
                 <i style={{ color: "#62677399" }}>Welcome!</i>
-            </div>
+            </div> */}
 
             <div className="row mt-2 p-2">
                 <div className="col-md-4 p-2" style={{ height: "100px" }}>

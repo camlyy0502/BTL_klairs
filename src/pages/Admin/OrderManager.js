@@ -64,15 +64,14 @@ function OrderManager() {
     }, []);
 
     useEffect(() => {
+        console.info('Selected Order:', selectedOrder);
         if (selectedOrder && selectedOrder.user_id) {
             AdminApi.getAccountById(selectedOrder.user_id)
-                .then(user => setUserEmail(user?.username || 'Ẩn'))
+                .then(user => setUserEmail(user?.username))
                 .catch(() => setUserEmail('Ẩn'));
         } else if (selectedOrder) {
             const orderDetail = OrderApi.getOrderDetail(selectedOrder.id);
-            setUserEmail(orderDetail.customer_name);
-        } else {
-            setUserEmail('');
+            setUserEmail(selectedOrder.customer_name);
         }
     }, [selectedOrder]);
 
@@ -827,18 +826,18 @@ function OrderUserEmailByOrderId({ orderId }) {
                             import('../../Api/Admin/AdminApi').then(({ default: AdminApi }) => {
                                 AdminApi.getAccountById(order.user_id)
                                     .then(user => setEmail(user?.username || order.customer_name))
-                                    .catch(() => setEmail('Ẩn'));
+                                    .catch(() => setEmail(''));
                             });
                         } else {
                             setEmail(order.customer_name);
                         }
                     }
                 })
-                .catch(() => { if (mounted) setEmail('Ẩn'); });
+                .catch(() => { if (mounted) setEmail(''); });
         });
         return () => { mounted = false; };
     }, [orderId]);
-    return email || 'Ẩn';
+    return email || '';
 }
 
 export default OrderManager;
