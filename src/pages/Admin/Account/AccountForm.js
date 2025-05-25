@@ -64,14 +64,15 @@ const AccountForm = ({ onClose, onCreated }) => {
     };
 
     return (
-        <div>
-            <div className="form-popup111">
-                <form className="form-container" onSubmit={handleSubmit}>
-                    <h4 className='mt-3'>Thông tin tài khoản</h4>
-                    <div>
-                        <label className="name">Email</label>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 2001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ background: '#fff', padding: 24, borderRadius: 10, minWidth: 340, maxWidth: '90vw', width: 'fit-content', position: 'relative' }}>
+                <form onSubmit={handleSubmit}>
+                    <h5>Thêm tài khoản mới</h5>
+                    <div className="mb-3">
+                        <label className="form-label">Email</label>
                         <input
                             type="email"
+                            className="form-control"
                             placeholder="Nhập email"
                             name="email"
                             value={form.email}
@@ -79,10 +80,11 @@ const AccountForm = ({ onClose, onCreated }) => {
                             required
                         />
                     </div>
-                    <div>
-                        <label className="name">Mật khẩu</label>
+                    <div className="mb-3">
+                        <label className="form-label">Mật khẩu</label>
                         <input
                             type="password"
+                            className="form-control"
                             placeholder="Nhập mật khẩu"
                             name="password"
                             value={form.password || ''}
@@ -90,43 +92,62 @@ const AccountForm = ({ onClose, onCreated }) => {
                             required
                         />
                     </div>
-                    <div>
-                        <label className="name">Số điện thoại</label>
+                    <div className="mb-3">
+                        <label className="form-label">Số điện thoại</label>
                         <input
                             type="text"
+                            className="form-control"
                             placeholder="Nhập số điện thoại"
                             name="phone"
                             value={form.phone}
                             onChange={handleChange}
                         />
                     </div>
-                    <div>
-                        <label className="name">Địa chỉ</label>
+                    <div className="mb-3">
+                        <label className="form-label">Địa chỉ</label>
                         <input
                             type="text"
+                            className="form-control"
                             placeholder="Nhập địa chỉ"
                             name="address"
                             value={form.address}
                             onChange={handleChange}
                         />
                     </div>
-                    <div>
-                        <label className="name">Role</label>
-                        <select name="role" value={form.role} onChange={handleChange} required>
-                            <option value="">Chọn role</option>
+                    <div className="mb-3">
+                        <label className="form-label">Vai trò</label>
+                        <select
+                            className="form-select"
+                            name="role"
+                            value={form.role}
+                            onChange={handleChange}
+                            required
+                        >
+                            <option value="">Chọn vai trò</option>
                             {filteredRoles.map(r => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
                         </select>
                     </div>
-                    <div className='form-bt'>
-                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>Lưu</button>
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>Đóng</button>
+                    <div className="d-flex gap-2 justify-content-end">
+                        <button type="button" className="btn btn-secondary" onClick={onClose}>
+                            Đóng
+                        </button>
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                            {isSubmitting ? 'Đang lưu...' : 'Lưu'}
+                        </button>
                     </div>
                 </form>
+                <span
+                    onClick={onClose}
+                    style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }}
+                    title="Đóng"
+                >
+                    &times;
+                </span>
             </div>
         </div>
-    )
+    );
 }
 
-export default AccountForm
+export default AccountForm;

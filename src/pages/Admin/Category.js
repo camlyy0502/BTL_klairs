@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CategoryAdminApi from '../../Api/Admin/CategoryAdminApi';
 import { toast } from 'react-toastify';
+import { Modal, Button } from 'react-bootstrap';
 
 function Category() {
   const [categories, setCategories] = useState([]);
@@ -8,8 +9,7 @@ function Category() {
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Thêm state cho popup xác nhận xóa
+  const [searchTerm, setSearchTerm] = useState('');
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
@@ -85,77 +85,109 @@ function Category() {
       toast.error(editId ? 'Cập nhật danh mục thất bại' : 'Thêm danh mục thất bại');
     }
   };    return (
-    <div className="container mt-4">
-      <h3>Quản lý danh mục</h3>
-      <button className="btn btn-primary mb-3" onClick={handleAdd}>Thêm danh mục</button>
-      {loading ? (
-        <p>Đang tải...</p>
-      ) : (
-        <table className="table table-bordered">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Tên loại</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-          {categories.map((cat, idx) => (
-            <tr key={cat.id}>
-              <td>{idx + 1}</td>
-              <td>{cat.name}</td>
-              <td>
-                <button className="btn btn-sm btn-warning" onClick={() => handleEdit(cat)}>Sửa</button>
-                <button className="btn btn-sm btn-danger ms-2" onClick={() => handleDelete(cat.id)}>Xóa</button>
-              </td>
-            </tr>
-          ))}
-          
-        </tbody>
-      </table>
-      )}
-      {/* Popup form thêm/sửa */}
-      {showForm && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          background: 'rgba(0,0,0,0.2)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <form onSubmit={handleFormSubmit} style={{
-            background: '#fff', padding: 24, borderRadius: 10, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative'
-          }}>
-            <h5>{editId ? 'Sửa danh mục' : 'Thêm danh mục'}</h5>
-            <input name="name" value={form.name} onChange={handleFormChange} placeholder="Tên danh mục" required />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button type="submit" className="btn btn-success">Lưu</button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Hủy</button>
+    <div className="container-fluid">
+      <div className="row">
+        <div className="col-md-12">
+          <div className="card">
+            <div className="card-header">
+              <h4>Quản lý danh mục
+                <button
+                  className="btn btn-primary btn-sm float-end"
+                  onClick={() => handleAdd()}
+                >
+                  Thêm danh mục mới
+                </button>
+                <input
+                  type="text"
+                  className="form-control float-end me-2"
+                  placeholder="Tìm kiếm theo tên danh mục..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: '250px' }}
+                />
+              </h4>
             </div>
-            <span onClick={() => setShowForm(false)} style={{
-              position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
-            }} title="Đóng">&times;</span>
-          </form>
-        </div>
-      )}
-      {/* Popup xác nhận xóa */}
-      {showDeletePopup && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          background: 'rgba(0,0,0,0.2)', zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div style={{
-            background: '#fff', padding: 24, borderRadius: 10, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', alignItems: 'center'
-          }}>
-            <h5>Xác nhận xóa</h5>
-            <p>Bạn có chắc muốn xóa loại sản phẩm này?</p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-danger" onClick={confirmDelete}>Xóa</button>
-              <button className="btn btn-secondary" onClick={cancelDelete}>Hủy</button>
+            <div className="card-body">
+              {loading ? (
+                <p>Đang tải...</p>
+              ) : (
+                <table className="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Tên loại</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categories.filter(category => {
+                      const searchLower = searchTerm.toLowerCase();
+                      return searchTerm === '' ? true : (
+                        category.name?.toLowerCase().includes(searchLower) ||
+                        category.id?.toString().includes(searchTerm)
+                      );
+                    }).map((cat, idx) => (
+                      <tr key={cat.id}>
+                        <td>{idx + 1}</td>
+                        <td>{cat.name}</td>
+                        <td>
+                          <button className="btn btn-sm btn-warning me-2" onClick={() => handleEdit(cat)}>Sửa</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(cat.id)}>Xóa</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
-            <span onClick={cancelDelete} style={{
-              position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888'
-            }} title="Đóng">&times;</span>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Modal thêm/sửa danh mục */}
+      <Modal show={showForm} onHide={() => setShowForm(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>{editId ? 'Sửa danh mục' : 'Thêm danh mục mới'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="mb-3">
+            <label htmlFor="name" className="form-label">Tên danh mục</label>
+            <input
+              type="text"
+              className="form-control"
+              id="name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowForm(false)}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={handleFormSubmit}>
+            {editId ? 'Cập nhật' : 'Thêm mới'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal xác nhận xóa */}
+      <Modal show={showDeletePopup} onHide={() => setShowDeletePopup(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Xác nhận xóa</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Bạn có chắc chắn muốn xóa danh mục này không?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeletePopup(false)}>
+            Hủy
+          </Button>
+          <Button variant="danger" onClick={confirmDelete}>
+            Xóa
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

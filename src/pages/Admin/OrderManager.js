@@ -6,13 +6,6 @@ import { toast } from 'react-toastify';
 import { Button, Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 import { DeleteOutlined, PlusOutlined, EllipsisOutlined } from '@ant-design/icons';
 
-const ORDER_STATUS = [
-    'Chờ xử lý',
-    'Đang giao',
-    'Hoàn thành',
-    'Đã hủy'
-];
-
 const STATUS_MAP = {
     'Chờ xử lý': 'PENDING',
     'Đang giao': 'SHIPPING',
@@ -56,6 +49,8 @@ function OrderManager() {
     // State lưu user đã chọn từ dropdown
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [editingOrder, setEditingOrder] = useState(null);
+    const [filterStatus, setFilterStatus] = useState('all'); // Thêm state cho bộ lọc
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchOrders();
@@ -64,13 +59,11 @@ function OrderManager() {
     }, []);
 
     useEffect(() => {
-        console.info('Selected Order:', selectedOrder);
         if (selectedOrder && selectedOrder.user_id) {
             AdminApi.getAccountById(selectedOrder.user_id)
                 .then(user => setUserEmail(user?.username))
                 .catch(() => setUserEmail('Ẩn'));
         } else if (selectedOrder) {
-            const orderDetail = OrderApi.getOrderDetail(selectedOrder.id);
             setUserEmail(selectedOrder.customer_name);
         }
     }, [selectedOrder]);
@@ -214,7 +207,8 @@ function OrderManager() {
             ...prev,
             products: prev.products.filter((_, i) => i !== index)
         }));
-    };    const handleProductChange = (index, field, value) => {
+    };
+    const handleProductChange = (index, field, value) => {
         setCreateFormData(prev => {
             let newValue = value;
             
@@ -303,11 +297,29 @@ function OrderManager() {
         }
     };
 
-    // Tính toán dữ liệu cho trang hiện tại
+    // Hàm chuyển đổi từ trạng thái API sang trạng thái hiển thị
+    const getDisplayStatus = (apiStatus) => {
+        return Object.entries(STATUS_MAP).find(([display, api]) => api === apiStatus)?.[0] || 'Chờ xử lý';
+    };
+
+    // Hàm lọc đơn hàng theo trạng thái và từ khóa tìm kiếm
+    const filteredOrders = orders.filter(order => {
+        const matchStatus = filterStatus === 'all' ? true : order.status === STATUS_MAP[filterStatus];
+        const searchLower = searchTerm.toLowerCase();
+        const matchSearch = searchTerm === '' ? true : (
+            order.id?.toString().includes(searchTerm) ||
+            order.customer_name?.toLowerCase().includes(searchLower) ||
+            order.customer_phone?.includes(searchTerm) ||
+            userMap[order.user_id]?.username?.toLowerCase().includes(searchLower)
+        );
+        return matchStatus && matchSearch;
+    });
+
+    // Tính toán dữ liệu cho trang hiện tại với danh sách đã lọc
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(orders.length / itemsPerPage);
+    const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
     // Hàm chuyển trang
     const handlePageChange = (page) => {
@@ -317,22 +329,61 @@ function OrderManager() {
     // Render nút phân trang
     const renderPagination = () => {
         if (totalPages <= 1) return null;
+        
         let pages = [];
-        for (let i = 1; i <= totalPages; i++) {
+        // Hiển thị tối đa 5 trang và thêm dấu ...
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        // Điều chỉnh startPage nếu endPage đã đạt giới hạn
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        // Thêm nút về trang đầu
+        if (startPage > 1) {
+            pages.push(
+                <button key="first" onClick={() => handlePageChange(1)} className="btn btn-sm btn-light mx-1">
+                    «
+                </button>
+            );
+            if (startPage > 2) {
+                pages.push(<span key="dots1" className="mx-1">...</span>);
+            }
+        }
+
+        // Thêm các nút trang
+        for (let i = startPage; i <= endPage; i++) {
             pages.push(
                 <button
                     key={i}
                     onClick={() => handlePageChange(i)}
-                    className={`btn btn-sm ${currentPage === i ? 'btn-primary' : 'btn-light'}`}
-                    style={{ margin: '0 2px' }}
+                    className={`btn btn-sm mx-1 ${currentPage === i ? 'btn-primary' : 'btn-light'}`}
                 >
                     {i}
                 </button>
             );
         }
+
+        // Thêm nút đến trang cuối
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pages.push(<span key="dots2" className="mx-1">...</span>);
+            }
+            pages.push(
+                <button key="last" onClick={() => handlePageChange(totalPages)} className="btn btn-sm btn-light mx-1">
+                    »
+                </button>
+            );
+        }
+
         return (
-            <div style={{ marginTop: 16, textAlign: 'center' }}>
-                {pages}
+            <div className="d-flex justify-content-center align-items-center mt-4">
+                <div className="pagination-info me-3">
+                    {`Hiển thị ${indexOfFirstItem + 1}-${Math.min(indexOfLastItem, filteredOrders.length)} trong tổng số ${filteredOrders.length} đơn hàng`}
+                </div>
+                <div>{pages}</div>
             </div>
         );
     };
@@ -382,6 +433,26 @@ function OrderManager() {
         }
     };
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (activeDropdown !== null) {
+                // Kiểm tra xem click có phải là bên ngoài dropdown menu không
+                const dropdownElement = document.querySelector(`[data-dropdown-id="${activeDropdown}"]`);
+                const buttonElement = document.querySelector(`[data-button-id="${activeDropdown}"]`);
+                
+                if (dropdownElement && !dropdownElement.contains(event.target) && 
+                    buttonElement && !buttonElement.contains(event.target)) {
+                    setActiveDropdown(null);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [activeDropdown]);
+
     return (
         <div className="container-fluid">
             <div className="row">
@@ -395,11 +466,44 @@ function OrderManager() {
                                 >
                                     Thêm đơn hàng
                                 </button>
+                                <select
+                                    className="form-select float-end me-2"
+                                    style={{ width: 'auto' }}
+                                    value={filterStatus}
+                                    onChange={(e) => {
+                                        setFilterStatus(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <option value="all">Tất cả trạng thái</option>
+                                    {Object.keys(STATUS_MAP).map(status => (
+                                        <option key={status} value={status}>{status}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="text"
+                                    className="form-control float-end me-2"
+                                    placeholder="Tìm kiếm theo mã đơn, tên, SĐT..."
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
+                                    }}
+                                    style={{ width: '250px' }}
+                                />
                             </h4>
                         </div>
                         <div className="card-body">
                             {loading ? <p>Đang tải...</p> : (
                                 <>
+                                    {/* <div className="mb-3">
+                                        <Input
+                                            placeholder="Tìm kiếm theo mã đơn, tên khách hàng, số điện thoại..."
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                            allowClear
+                                        />
+                                    </div> */}
                                     <table className="table table-bordered">
                                         <thead>
                                             <tr>
@@ -417,17 +521,15 @@ function OrderManager() {
                                                     <td>{order.id}</td>
                                                     <td>{order.id ? <OrderUserEmailByOrderId orderId={order.id} /> : 'Ẩn'}</td>
                                                     <td>{order.order_date ? new Date(order.order_date).toLocaleString() : ''}</td>
-                                                    <td>{order.status || 'Chờ xử lý'}</td>
+                                                    <td>{getDisplayStatus(order.status)}</td>
                                                     <td>{order.total_price ? Number(order.total_price).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : ''}đ</td>
                                                     <td style={{ position: 'relative' }}>
                                                         <button
                                                             className="btn"
-                                                            onClick={e => {
-                                                                e.stopPropagation();
-                                                                setActiveDropdown(activeDropdown === order.id ? null : order.id);
-                                                            }}
+                                                            data-button-id={order.id}
+                                                            onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
                                                         >
-                                                            ...
+                                                            <i className="fas fa-ellipsis-h"></i>
                                                         </button>
                                                         {activeDropdown === order.id && (
                                                             <div
@@ -444,24 +546,29 @@ function OrderManager() {
                                                                     borderRadius: '.25rem',
                                                                     boxShadow: '0 2px 5px rgba(0,0,0,.2)'
                                                                 }}
+                                                                data-dropdown-id={order.id}
                                                             >
                                                                 <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleViewDetail(order); }}>
                                                                     <i className="fas fa-info-circle me-2"></i>Xem chi tiết
                                                                 </button>
-                                                                <button className="dropdown-item" onClick={() => {
-                                                                    setActiveDropdown(null);
-                                                                    setStatusOrderId(order.id);
-                                                                    setNewStatus(order.status || 'Chờ xử lý');
-                                                                    setShowStatusPopup(true);
-                                                                }}>
-                                                                    <i className="fas fa-edit me-2"></i>Đổi trạng thái
-                                                                </button>
-                                                                <button className="dropdown-item" onClick={() => {
-                                                                    setActiveDropdown(null);
-                                                                    handleEditOrder(order);
-                                                                }}>
-                                                                    <i className="fas fa-edit me-2"></i>Sửa đơn hàng
-                                                                </button>
+                                                                {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                                                                    <>
+                                                                        <button className="dropdown-item" onClick={() => {
+                                                                            setActiveDropdown(null);
+                                                                            setStatusOrderId(order.id);
+                                                                            setNewStatus(order.status || 'Chờ xử lý');
+                                                                            setShowStatusPopup(true);
+                                                                        }}>
+                                                                            <i className="fas fa-edit me-2"></i>Đổi trạng thái
+                                                                        </button>
+                                                                        <button className="dropdown-item" onClick={() => {
+                                                                            setActiveDropdown(null);
+                                                                            handleEditOrder(order);
+                                                                        }}>
+                                                                            <i className="fas fa-edit me-2"></i>Sửa đơn hàng
+                                                                        </button>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </td>
@@ -510,8 +617,8 @@ function OrderManager() {
                                             onChange={e => setNewStatus(e.target.value)}
                                             style={{ minWidth: 180 }}
                                         >
-                                            {ORDER_STATUS.map(st => (
-                                                <option key={st} value={st}>{st}</option>
+                                            {Object.keys(STATUS_MAP).map(status => (
+                                                <option key={status} value={status}>{status}</option>
                                             ))}
                                         </select>
                                         <div style={{ display: 'flex', gap: 8 }}>
@@ -520,9 +627,7 @@ function OrderManager() {
                                                 onClick={async () => {
                                                     setSavingStatusId(statusOrderId);
                                                     try {
-                                                        // Chuyển trạng thái hiển thị sang trạng thái API
-                                                        const apiStatus = STATUS_MAP[newStatus] || 'pending';
-                                                        await OrderApi.updateOrderStatus(statusOrderId, apiStatus);
+                                                        await OrderApi.updateOrderStatus(statusOrderId, STATUS_MAP[newStatus]);
                                                         toast.success('Cập nhật trạng thái thành công');
                                                         setShowStatusPopup(false);
                                                         setStatusOrderId(null);
@@ -776,8 +881,8 @@ function OrderManager() {
                             onChange={e => setNewStatus(e.target.value)}
                             style={{ minWidth: 180 }}
                         >
-                            {ORDER_STATUS.map(st => (
-                                <option key={st} value={st}>{st}</option>
+                            {Object.keys(STATUS_MAP).map(status => (
+                                <option key={status} value={status}>{status}</option>
                             ))}
                         </select>
                         <div style={{ display: 'flex', gap: 8 }}>
@@ -786,9 +891,7 @@ function OrderManager() {
                                 onClick={async () => {
                                     setSavingStatusId(statusOrderId);
                                     try {
-                                        // Chuyển trạng thái hiển thị sang trạng thái API
-                                        const apiStatus = STATUS_MAP[newStatus] || 'pending';
-                                        await OrderApi.updateOrderStatus(statusOrderId, apiStatus);
+                                        await OrderApi.updateOrderStatus(statusOrderId, STATUS_MAP[newStatus]);
                                         toast.success('Cập nhật trạng thái thành công');
                                         setShowStatusPopup(false);
                                         setStatusOrderId(null);
