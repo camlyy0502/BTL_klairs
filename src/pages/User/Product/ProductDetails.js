@@ -5,6 +5,76 @@ import { toast } from 'react-toastify';
 import { useCart } from '../../../contexts/CartContext';
 import { getFullImageUrl } from '../../../utils/imageUrl';
 import ProductItem from "./ProductItem";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+// Custom CSS cho nút prev/next
+const sliderSettings = {
+    dots: false,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 4,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    prevArrow: <button className="slick-prev" style={{
+        left: '-40px',
+        zIndex: 2,
+        background: '#fff',
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        border: '2px solid #d26e4b',
+        boxShadow: '0 2px 8px rgba(210,110,75,0.15)',
+        color: '#222',
+        display: 'flex',
+        opacity: 1,
+        cursor: 'pointer',
+        position: 'absolute',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.2s, color 0.2s',
+    }}><i className="fas fa-chevron-left" style={{ fontSize: '22px', color: '#222', fontWeight: 'bold' }}></i></button>,
+    nextArrow: <button className="slick-next" style={{
+        right: '-40px',
+        zIndex: 2,
+        background: '#fff',
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        border: '2px solid #d26e4b',
+        boxShadow: '0 2px 8px rgba(210,110,75,0.15)',
+        color: '#222',
+        display: 'flex',
+        opacity: 1,
+        cursor: 'pointer',
+        position: 'absolute',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.2s, color 0.2s',
+    }}><i className="fas fa-chevron-right" style={{ fontSize: '22px', color: '#222', fontWeight: 'bold' }}></i></button>,
+    responsive: [
+        {
+            breakpoint: 1024,
+            settings: {
+                slidesToShow: 3,
+            }
+        },
+        {
+            breakpoint: 768,
+            settings: {
+                slidesToShow: 2,
+            }
+        },
+        {
+            breakpoint: 480,
+            settings: {
+                slidesToShow: 1,
+            }
+        }
+    ]
+};
 
 function ProductDetails() {
     const { productId } = useParams();
@@ -13,6 +83,7 @@ function ProductDetails() {
     const [showBuyBox, setShowBuyBox] = useState(false);
     const [activeTab, setActiveTab] = useState("description");
     const [quantity, setQuantity] = useState(1);
+    const [relatedProducts, setRelatedProducts] = useState([]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -41,6 +112,18 @@ function ProductDetails() {
             fetchProductDetails();
         }
     }, [productId]);
+
+    useEffect(() => {
+        const fetchAllProduct = async () => {
+            try {
+              const res = await DashboardApi.getAllProduct();
+              setRelatedProducts(res.data);
+            } catch (error) {
+              throw error;
+            }
+          };
+          fetchAllProduct();
+    }, []);
 
     const handleQuantityChange = (e) => {
         const value = parseInt(e.target.value);
@@ -223,43 +306,23 @@ function ProductDetails() {
             </div>
             <div className="mt-5">
                     <h4>SẢN PHẨM TƯƠNG TỰ</h4>
-                    <div className='mt-4 row '>
-                        <div className='col-md-3 product-container'>
-                            <ProductItem
-                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/serum-duong-trang-da-klairs-600x600.jpg'
-                                productPrice='400.000'
-                                productName='Serum Vitamin C dưỡng trắng da Klairs Freshly Jucied Vitamin Drop Serum'
-                                productPriceSale='300.000'
-                                sale='25'
-                            ></ProductItem>
-                        </div>
-                        <div className='col-md-3 product-container'>
-                            <ProductItem
-                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/kem-chong-nang-klairs-1.jpg'
-                                productPrice='400.000'
-                                productName='Kem chống nắng bảo vệ da Klairs Soft Airi UV Essence Spf 50 PA++'
-                                productPriceSale='300.000'
-                                sale='25'
-                            ></ProductItem>
-                        </div>
-                        <div className='col-md-3 product-container'>
-                            <ProductItem
-                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/Klairs-Rich-Moist-Soothing-Cream-600x600.jpg'
-                                productPrice='400.000'
-                                productName='Kem dưỡng ẩm Klairs Rich Moist Soothing Cream'
-                                productPriceSale='300.000'
-                                sale='25'
-                            ></ProductItem>
-                        </div>
-                        <div className='col-md-3 product-container'>
-                            <ProductItem
-                                productImg='https://klairsvietnam.vn/wp-content/uploads/2020/07/Klairs-Rich-Moist-Soothing-Serum-600x600.jpg'
-                                productPrice='400.000'
-                                productName='Serum dưỡng ẩm Klairs Rich Moist Soothing Serum'
-                                productPriceSale='300.000'
-                                sale='25'
-                            ></ProductItem>
-                        </div>
+                    <div className='mt-4' style={{ position: 'relative', padding: '0 40px', overflow: 'visible' }}>
+                        <Slider
+                            {...sliderSettings}
+                        >
+                            {relatedProducts.map(product => (
+                                <div key={product.product_id} className='px-2'>
+                                    <ProductItem
+                                        productId={product.id}
+                                        productImg={getFullImageUrl(product.url)}
+                                        productPrice={product.price}
+                                        productName={product.name}
+                                        productPriceSale={product.salePrice}
+                                        sale={product.sale}
+                                    />
+                                </div>
+                            ))}
+                        </Slider>
                     </div>
                 </div>
         </div>

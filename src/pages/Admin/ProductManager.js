@@ -544,7 +544,8 @@ function ProductManager() {
                 value={form.price} 
                 onChange={handleFormChange} 
                 placeholder="Nhập giá sản phẩm" 
-                type="number" 
+                type="number"
+                min="1"
                 required 
                 style={inputStyle}
               />

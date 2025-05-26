@@ -11,10 +11,10 @@ const DashboardApi = {
     }
   },
 
-  getLimitProduct: async (limit = 12, page = 1) => {
+  getLimitProduct: async (limit = 12, page = 1, category) => {
     try {
       const response = await axiosClient.get('/api/v1/products', {
-        params: { limit, page },
+        params: { limit, page, category },
         withCredentials: true,
       });
       return response;
@@ -27,6 +27,16 @@ const DashboardApi = {
   getDetailProduct: async (id) => {
     try {
       const response = await axiosClient.get(`/api/v1/products/${id}`);
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+  
+  listCategories: async () => {
+    try {
+      const response = await axiosClient.get(`/api/v1/categories`);
       return response;
     } catch (error) {
       console.error('API Error:', error);

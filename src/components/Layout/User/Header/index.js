@@ -5,6 +5,7 @@ import ChatBot from '../../../../pages/User/ChatBot/ChatUser';
 import AccountApi from '../../../../Api/Account/AccountApi';
 import { v4 as uuid4 } from 'uuid';
 import { useCart } from '../../../../contexts/CartContext';
+import DashboardApi from '../../../../Api/Product/DashboardApi';
 
 function Header() {
     const { cart, updateCart, calculateTotal } = useCart();
@@ -40,6 +41,19 @@ function Header() {
     const [isFixed, setIsFixed] = useState(false);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [userData, setUserData] = useState({});
+    const [showCatDropdown, setShowCatDropdown] = useState(false);
+    const [categories, setCategories] = useState([]);
+    useEffect(() => {
+        const fetchCategories = async () => {
+        try {
+            const res = await DashboardApi.listCategories();
+            setCategories(res.map(cat => ({ id: cat.id, name: cat.name })));
+        } catch (error) {
+            console.error("Failed to fetch categories:", error);
+        }
+        };
+        fetchCategories();
+    }, []);
     useEffect(() => {
         const getUser = async () => {
             try {
@@ -106,8 +120,40 @@ function Header() {
                                     <Link to='/'>
                                         <li className={location.pathname === '/' ? 'active' : ''} style={{ color: location.pathname === '/' ? '#000' : undefined }}>TRANG CHỦ</li>
                                     </Link>
-                                    <Link to='/products'>
+                                    {/* <Link to='/products'>
                                         <li className={location.pathname.startsWith('/products') ? 'active' : ''} style={{ color: location.pathname.startsWith('/products') ? '#000' : undefined }}>SẢN PHẨM</li>
+                                    </Link> */}
+                                    <Link to='/products' style={{ textDecoration: 'none' }}>
+                                        <li
+                                            className={`position-relative${location.pathname.startsWith('/products') ? ' active' : ''}`}
+                                            style={{ color: location.pathname.startsWith('/products') ? '#000' : undefined, cursor: 'pointer' }}
+                                            onMouseEnter={() => setShowCatDropdown(true)}
+                                            onMouseLeave={() => setShowCatDropdown(false)}
+                                        >
+                                            SẢN PHẨM
+                                            {showCatDropdown && (
+                                                <ul style={{
+                                                    position: 'absolute',
+                                                    top: '100%',
+                                                    left: 0,
+                                                    background: '#fff',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: 4,
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                                    minWidth: 180,
+                                                    padding: 0,
+                                                    margin: 0,
+                                                    listStyle: 'none',
+                                                    zIndex: 1000
+                                                }}>
+                                                    {categories.map(cat => (
+                                                        <Link key={cat.id} to={`/products?category=${encodeURIComponent(cat.id)}`} style={{ textDecoration: 'none' }}>
+                                                            <li style={{ padding: '2px 16px', cursor: 'pointer', color: '#222', fontWeight: 500, lineHeight: 1 }}>{cat.name}</li>
+                                                        </Link>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </li>
                                     </Link>
                                     <Link to='/introduce'>
                                         <li className={location.pathname.startsWith('/introduce') ? 'active' : ''} style={{ color: location.pathname.startsWith('/introduce') ? '#000' : undefined }}>GIỚI THIỆU</li>
