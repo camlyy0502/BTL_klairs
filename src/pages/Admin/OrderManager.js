@@ -51,6 +51,8 @@ function OrderManager() {
     const [editingOrder, setEditingOrder] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all'); // Thêm state cho bộ lọc
     const [searchTerm, setSearchTerm] = useState('');
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [invoiceOrder, setInvoiceOrder] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -453,6 +455,18 @@ function OrderManager() {
         };
     }, [activeDropdown]);
 
+    // Hàm mở modal hóa đơn
+    const handleShowInvoice = async (order) => {
+        try {
+            const res = await OrderApi.getOrderDetail(order.id);
+            setInvoiceOrder({ ...res, ...order });
+            setShowInvoiceModal(true);
+            setActiveDropdown(null);
+        } catch (e) {
+            toast.error('Không thể lấy thông tin hóa đơn');
+        }
+    };
+
     return (
         <div className="container-fluid">
             <div className="row">
@@ -551,6 +565,11 @@ function OrderManager() {
                                                                 <button className="dropdown-item" onClick={() => { setActiveDropdown(null); handleViewDetail(order); }}>
                                                                     <i className="fas fa-info-circle me-2"></i>Xem chi tiết
                                                                 </button>
+                                                                {order.status === 'COMPLETED' && (
+                                                                    <button className="dropdown-item" onClick={() => handleShowInvoice(order)}>
+                                                                        <i className="fas fa-print me-2"></i>In hóa đơn
+                                                                    </button>
+                                                                )}
                                                                 {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
                                                                     <>
                                                                         <button className="dropdown-item" onClick={() => {
@@ -837,6 +856,77 @@ function OrderManager() {
                                         </div>
                                     </Form>
                                 </Modal>
+                            )}
+                            {showInvoiceModal && invoiceOrder && (
+                                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>                                    <div id="invoice-print-area" style={{ background: '#fff', padding: 32, borderRadius: 10, minWidth: 400, maxWidth: '95vw', width: 'fit-content', position: 'relative', wordBreak: 'break-word', overflowWrap: 'break-word', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+                                            <div style={{ flex: '0 0 auto' }}>
+                                                <img src="/logo.svg" alt="Logo" style={{ height: 25 }} />
+                                            </div>
+                                            <div style={{ flex: 1, textAlign: 'center' }}>
+                                                <h3 style={{ margin: 0, fontSize: 40 }}>HÓA ĐƠN BÁN HÀNG</h3>
+                                            </div>
+                                            <div style={{ flex: '0 0 auto', width: 60 }}></div>
+                                        </div>
+                                        <div style={{ marginBottom: 8 }}><b>Mã đơn hàng:</b> {invoiceOrder.id}</div>
+                                        <div style={{ marginBottom: 8 }}><b>Khách hàng:</b> {invoiceOrder.customer_name}</div>
+                                        <div style={{ marginBottom: 8 }}><b>Số điện thoại:</b> {invoiceOrder.customer_phone}</div>
+                                        <div style={{ marginBottom: 8 }}><b>Địa chỉ giao hàng:</b> {invoiceOrder.shipping_address}</div>
+                                        <div style={{ marginBottom: 8 }}><b>Ngày đặt:</b> {invoiceOrder.order_date ? new Date(invoiceOrder.order_date).toLocaleString() : ''}</div>
+                                        <div style={{ marginBottom: 8 }}><b>Trạng thái:</b> Hoàn thành</div>
+                                        <div style={{ margin: '16px 0 8px 0' }}><b>Danh sách sản phẩm:</b></div>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
+                                            <thead>
+                                                <tr style={{ background: '#f5f5f5' }}>
+                                                    <th style={{ border: '1px solid #ddd', padding: 6 }}>Tên sản phẩm</th>
+                                                    <th style={{ border: '1px solid #ddd', padding: 6 }}>Số lượng</th>
+                                                    <th style={{ border: '1px solid #ddd', padding: 6 }}>Đơn giá</th>
+                                                    <th style={{ border: '1px solid #ddd', padding: 6 }}>Thành tiền</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {invoiceOrder.order_items && invoiceOrder.order_items.map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td style={{ border: '1px solid #ddd', padding: 6 }}>{item.name || (productMap[item.product_id]?.name || item.product_id)}</td>
+                                                        <td style={{ border: '1px solid #ddd', padding: 6, textAlign: 'center' }}>{item.quantity}</td>
+                                                        <td style={{ border: '1px solid #ddd', padding: 6, textAlign: 'right' }}>{Number(item.price).toLocaleString('vi-VN')}đ</td>
+                                                        <td style={{ border: '1px solid #ddd', padding: 6, textAlign: 'right' }}>{Number(item.price * item.quantity).toLocaleString('vi-VN')}đ</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>
+                                            Tổng tiền: {invoiceOrder.total_price ? Number(invoiceOrder.total_price).toLocaleString('vi-VN') : ''}đ
+                                        </div>
+                                        <div style={{ textAlign: 'right', marginBottom: 16 }}>
+                                            <span style={{ fontStyle: 'italic', color: '#888' }}>Thanh toán khi nhận hàng</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }} className="no-print">
+                                            <button className="btn btn-primary" onClick={() => {  
+                                                const printContents = document.getElementById('invoice-print-area').innerHTML;
+                                                const printWindow = window.open('', '_blank', 'height=700,width=900');
+                                                printWindow.document.write('<html><head><title></title>');
+                                                printWindow.document.write(`<style>
+                                                    @media print { 
+                                                        .no-print { display: none !important; }
+                                                        @page { margin: 0.5cm; }
+                                                        body { font-family: Arial, sans-serif; }
+                                                    }
+                                                </style>`);                                                
+                                                printWindow.document.write('</head><body>');
+                                                const dateStr = invoiceOrder.order_date ? new Date(invoiceOrder.order_date).toLocaleDateString('vi-VN') : '';
+                                                printWindow.document.write(printContents.replace(/\d{1,2}\/\d{1,2}\/\d{4},\s\d{1,2}:\d{2}:\d{2}\s[AP]M/g, dateStr));
+                                                printWindow.document.write('</body></html>');
+                                                printWindow.document.close();
+                                                printWindow.focus();
+                                                setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                                            }}>
+                                                <i className="fas fa-print me-2"></i>In hóa đơn
+                                            </button>
+                                            <button className="btn btn-secondary" onClick={() => setShowInvoiceModal(false)}>Đóng</button>
+                                        </div>
+                                        <span onClick={() => setShowInvoiceModal(false)} style={{ position: 'absolute', top: 8, right: 12, fontSize: 22, cursor: 'pointer', color: '#888' }} title="Đóng" className="no-print">&times;</span>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
