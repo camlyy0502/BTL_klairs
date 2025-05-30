@@ -43,7 +43,7 @@ function OrderPage() {
                             <td>{order.id}</td>
                             <td>{order.order_date ? new Date(order.order_date).toLocaleString() : ''}</td>
                             <td>{order.status}</td>
-                            <td>{order.total_price ? order.total_price.toLocaleString() : ''}đ</td>
+                            <td>{Number(order.total_price).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}đ</td>
                             <td><Link to={`/orders/${order.id}`}>Xem chi tiết</Link></td>
                         </tr>
                     ))}

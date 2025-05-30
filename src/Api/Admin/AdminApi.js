@@ -59,6 +59,16 @@ const AdminApi = {
       throw error;
     }
   },
+  
+  getAddressAdmin: async (id) => {
+    try {
+      const response = await axiosClient.get(`/api/admin/addresses/${id}`);
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
   changeRoleUser: async (id, body) => {
     try {
       const response = await axiosClient.put(`/api/admin/accounts/${id}/roles`, body);

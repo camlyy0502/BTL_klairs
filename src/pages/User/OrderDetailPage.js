@@ -63,7 +63,7 @@ function OrderDetailPage() {
                 <b>Tên người nhận:</b> {address.recipient_name}
             </div>
             <div style={{ marginBottom: 16 }}>
-                <b>Số điện thoại:</b> {address.phone}
+                <b>Số điện thoại:</b> {address.phone_number}
             </div>
             <div style={{ marginBottom: 16 }}>
                 <b>Địa chỉ giao hàng:</b> {address ? `${address.address_line}` : order.address_id}

@@ -49,7 +49,7 @@ const ProductItem = ({ productId, productImg, productName, productPrice, product
         <Link to={`/products/${productId}`} onClick={e => e.stopPropagation()}>
             <div className='product-item'>
                 <img src={getFullImageUrl(productImg)} alt={productName}/>
-                <p className='text-center mt-2 mb-0' style={{ fontSize: '16px', color: '#000' }}>{productName}</p>
+                <p className='text-center mt-2 mb-0' style={{ fontSize: '16px', color: '#000', height: "60px" }}>{productName}</p>
                 <p className='text-center mt-1 mb-0' style={{ color: '#000' }}>
     <span style={{ textDecoration: sale > 0 ? 'line-through' : 'none' }}>
         <span>{Number(productPrice).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}</span>

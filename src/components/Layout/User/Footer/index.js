@@ -13,9 +13,9 @@ function Footer() {
                             <p>Hotline : 0931.666.489</p>
                             <p>Website : https://klairsvietnam.vn/</p>
                         </div>
-                        <div className='col-md-4'>
+                        {/* <div className='col-md-4'>
                             <h6>SẢN PHẨM</h6>
-                        </div>
+                        </div> */}
                         <div className='col-md-4'>
                             <h6>HỖ TRỢ KHÁCH HÀNG</h6>
                             <p className='mt-3'>Giới thiệu</p>

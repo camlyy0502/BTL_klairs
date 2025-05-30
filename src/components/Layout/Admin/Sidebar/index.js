@@ -28,7 +28,7 @@ function Sidebar() {
         { to: '/admin/bot', icon: 'fas fa-robot me-2', label: 'Quản lý bot' },
         { to: '/admin/products', icon: 'fas fa-box me-2', label: 'Quản lý sản phẩm' }, // Thêm mục quản lý sản phẩm
         { to: '/admin/orders', icon: 'fas fa-shopping-cart me-2', label: 'Quản lý đơn hàng' }, // Thêm mục quản lý đơn hàng
-        { to: '/admin/category', icon: 'fas fa-tags me-2', label: 'Danh mục' },
+        { to: '/admin/category', icon: 'fas fa-tags me-2', label: 'Quản lý danh mục' },
         { to: '/', icon: 'fa-solid fa-repeat me-2', label: 'Chuyển tới dashboard' },
     ];
 

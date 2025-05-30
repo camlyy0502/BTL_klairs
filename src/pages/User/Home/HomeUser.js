@@ -49,7 +49,7 @@ function Home() {
                             <span style={{ fontWeight: '600' }}>Dear Klairs</span>
                             <span> Thương hiệu mỹ phẩm Hàn Quốc với các dòng sản phẩm hoàn toàn từ thiên nhiên,</span>
                             <span style={{ fontWeight: '600' }}> Klairs</span>
-                            <span>Là nhãn hàng chăm sóc da nhạy cảm hàng đầu với hàng nghìn khách hàng tại hơn 50 quốc gia đã và đang tin tưởng sử dụng</span>
+                            <span> Là nhãn hàng chăm sóc da nhạy cảm hàng đầu với hàng nghìn khách hàng tại hơn 50 quốc gia đã và đang tin tưởng sử dụng</span>
                         </p>
                         
                         <h5 className='text-center mt-5' style={{ fontSize: '32px' }}>BỘ SẢN PHẨM DEAR KLAIRS</h5>
