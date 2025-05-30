@@ -115,6 +115,16 @@ function Home() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Validate ngày bắt đầu < ngày kết thúc và ngày kết thúc < ngày hiện tại
+        const now = dayjs().format('YYYY-MM-DD');
+        if (fromDate >= toDate) {
+            alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!');
+            return;
+        }
+        if (toDate > now) {
+            alert('Ngày kết thúc phải nhỏ hơn hoặc bằng ngày hiện tại!');
+            return;
+        }
         fetchStats(fromDate, toDate);
     };
 
@@ -141,6 +151,29 @@ function Home() {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Thống kê');
         XLSX.writeFile(wb, `thong_ke_${fromDate}_den_${toDate}.xlsx`);
+    };
+
+    const handleFromDateChange = (e) => {
+        const value = e.target.value;
+        if (value >= toDate+1) {
+            alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!');
+            return;
+        }
+        setFromDate(value);
+    };
+
+    const handleToDateChange = (e) => {
+        const value = e.target.value;
+        const now = dayjs().format('YYYY-MM-DD');
+        if (value > now) {
+            alert('Ngày kết thúc phải nhỏ hơn hoặc bằng ngày hiện tại!');
+            return;
+        }
+        if (fromDate-1 >= value) {
+            alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!');
+            return;
+        }
+        setToDate(value);
     };
 
     return (
@@ -195,11 +228,11 @@ function Home() {
                 <div className="row mt-4">
                     <div className="col-md-3">
                         <label style={{ marginRight: "8px" }}>Từ ngày : </label>
-                        <input type="date" id="from_date" name="from_date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+                        <input type="date" id="from_date" name="from_date" value={fromDate} onChange={handleFromDateChange} />
                     </div>
                     <div className="col-md-3">
                         <label style={{ marginRight: "8px" }}>Đến ngày : </label>
-                        <input type="date" id="to_date" name="to_date" className="ml-2" value={toDate} onChange={e => setToDate(e.target.value)} />
+                        <input type="date" id="to_date" name="to_date" className="ml-2" value={toDate} onChange={handleToDateChange} />
                     </div>
                     <div className="col-md-2">
                         <button style={{ borderColor: "#62677399" }} type="submit">Thống kê</button>

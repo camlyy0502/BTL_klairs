@@ -14,6 +14,8 @@ const Login = ({ isVisible, onClose, isRegister }) => {
         password: ""
     });
     const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
     const handleSignUpClick = () => {
         setRightPanelActive(true);
@@ -113,13 +115,33 @@ const Login = ({ isVisible, onClose, isRegister }) => {
                                 onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
                                 required
                             />
-                            <input 
-                                type="password" 
-                                placeholder="Password" 
-                                value={signUpData.password}
-                                onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
-                                required
-                            />
+                            <div style={{ position: 'relative', width: '284px' }}>
+                                <input 
+                                    type={showSignUpPassword ? "password" : "text"}
+                                    placeholder="Password" 
+                                    value={signUpData.password}
+                                    onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                                    required
+                                    style={{ paddingRight: 36 }}
+                                />
+                                <span
+                                    onClick={() => setShowSignUpPassword((prev) => !prev)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: 16,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        cursor: 'pointer',
+                                        zIndex: 2
+                                    }}
+                                >
+                                    {showSignUpPassword ? (
+                                        <i className="fas fa-eye-slash"></i>
+                                    ) : (
+                                        <i className="fas fa-eye"></i>
+                                    )}
+                                </span>
+                            </div>
                             <button type="submit" disabled={isSubmit}>
                                 {isSubmit ? 'Signing Up...' : 'Sign Up'}
                             </button>
@@ -139,14 +161,34 @@ const Login = ({ isVisible, onClose, isRegister }) => {
                                 onChange={(e) => setLoginData({...loginData, email: e.target.value})}
                                 required
                             />
-                            <input 
-                                type="password" 
-                                placeholder="Password" 
-                                value={loginData.password}
-                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                                required
-                            />
-                            <a href="#">Forgot your password?</a>
+                            <div style={{ position: 'relative', width: '284px' }}>
+                                <input 
+                                    type={showPassword ? "password" : "text"}
+                                    placeholder="Password" 
+                                    value={loginData.password}
+                                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                    required
+                                    style={{ paddingRight: 36 }}
+                                />
+                                <span
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: 16,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        cursor: 'pointer',
+                                        zIndex: 2
+                                    }}
+                                >
+                                    {showPassword ? (
+                                        <i className="fas fa-eye"></i>
+                                    ) : (                                        
+                                        <i className="fas fa-eye"></i>
+                                    )}
+                                </span>
+                            </div>
+                            {/* <a href="#">Forgot your password?</a> */}
                             <button  disabled={isSubmit}> {isSubmit ? 'Signing In...' : 'Sign In'}</button>
                         </form>
                     </div>

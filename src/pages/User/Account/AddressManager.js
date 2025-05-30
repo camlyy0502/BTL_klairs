@@ -94,7 +94,7 @@ function AddressManager({ onSelect, selectedAddressId }) {
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                 <input type="radio" checked={selectedAddressId === addr.id || (addr.is_default && !selectedAddressId)} onChange={() => onSelect(addr.id)} onClick={e => e.stopPropagation()} />
-                                <span style={{ marginLeft: 8, fontWeight: 500 }}>{addr.recipient_name} - {addr.phone}</span>
+                                <span style={{ marginLeft: 8, fontWeight: 500 }}>{addr.recipient_name} - {addr.phone_number}</span>
                                 {addr.is_default && <span style={{ color: 'green', marginLeft: 8 }}>(Mặc định)</span>}
                             </div>
                             <span style={{ marginLeft: 32, color: '#555' }}>{addr.address_line}</span>

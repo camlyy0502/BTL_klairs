@@ -459,6 +459,12 @@ function OrderManager() {
     const handleShowInvoice = async (order) => {
         try {
             const res = await OrderApi.getOrderDetail(order.id);
+            if (order.address_id) {
+                const address = await AdminApi.getAddressAdmin(order.address_id);
+                order.shipping_address = address ? address.address_line : 'Không có địa chỉ';
+                order.customer_phone = address ? address.phone_number : '';
+                order.customer_name = address ? address.recipient_name : '';
+            }
             setInvoiceOrder({ ...res, ...order });
             setShowInvoiceModal(true);
             setActiveDropdown(null);
@@ -570,23 +576,32 @@ function OrderManager() {
                                                                         <i className="fas fa-print me-2"></i>In hóa đơn
                                                                     </button>
                                                                 )}
-                                                                {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-                                                                    <>
-                                                                        <button className="dropdown-item" onClick={() => {
-                                                                            setActiveDropdown(null);
-                                                                            setStatusOrderId(order.id);
+                                                                {order.status === 'SHIPPING' ? (
+                                                                    <button className="dropdown-item" onClick={() => {
                                                                             setNewStatus(order.status || 'Chờ xử lý');
                                                                             setShowStatusPopup(true);
                                                                         }}>
                                                                             <i className="fas fa-edit me-2"></i>Đổi trạng thái
                                                                         </button>
-                                                                        <button className="dropdown-item" onClick={() => {
-                                                                            setActiveDropdown(null);
-                                                                            handleEditOrder(order);
-                                                                        }}>
-                                                                            <i className="fas fa-edit me-2"></i>Sửa đơn hàng
-                                                                        </button>
-                                                                    </>
+                                                                ) : (
+                                                                    order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                                                                        <>
+                                                                            <button className="dropdown-item" onClick={() => {
+                                                                                setActiveDropdown(null);
+                                                                                setStatusOrderId(order.id);
+                                                                                setNewStatus(order.status || 'Chờ xử lý');
+                                                                                setShowStatusPopup(true);
+                                                                            }}>
+                                                                                <i className="fas fa-edit me-2"></i>Đổi trạng thái
+                                                                            </button>
+                                                                            <button className="dropdown-item" onClick={() => {
+                                                                                setActiveDropdown(null);
+                                                                                handleEditOrder(order);
+                                                                            }}>
+                                                                                <i className="fas fa-edit me-2"></i>Sửa đơn hàng
+                                                                            </button>
+                                                                        </>
+                                                                    )
                                                                 )}
                                                             </div>
                                                         )}
@@ -864,6 +879,7 @@ function OrderManager() {
                                             </div>
                                             <div style={{ flex: 1, textAlign: 'center' }}>
                                                 <h3 style={{ margin: 0, fontSize: 40 }}>HÓA ĐƠN BÁN HÀNG</h3>
+                                                <h6 style={{ marginBottom: 8 }}><b>Số:</b> HĐ-{invoiceOrder.id}</h6>
                                             </div>
                                             <div style={{ flex: '0 0 auto', width: 60 }}></div>
                                         </div>
