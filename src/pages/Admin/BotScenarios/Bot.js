@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Table, Button, Modal, Form, Input, Select, Switch, InputNumber, Row, Col, Divider } from "antd";
 
 import BotScenariosApi from '../../../Api/Admin/BotScenarios';
+import { toast } from "react-toastify";
 
 
 const { Option } = Select;
@@ -56,11 +57,19 @@ function BotScenariosPage() {
     try {
       const values = await form.validateFields();
       if (editing) {
+        try {
         // Cập nhật kịch bản
         await BotScenariosApi.updateBotScenario(editing.id, values);
+        } catch (error) {
+          toast.error('Cập nhật kịch bản thất bại');
+        }
       } else {
+        try {
         // Tạo kịch bản mới
-        await BotScenariosApi.createBotScenarios(values);
+          await BotScenariosApi.createBotScenarios(values);
+        } catch (error) {
+          toast.error('Tạo kịch bản thất bại');
+        }
       }
       // Sau khi thêm/sửa thành công, gọi lại API lấy danh sách mới
       const updatedList = await BotScenariosApi.listBotScenarios();

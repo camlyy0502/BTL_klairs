@@ -25,8 +25,6 @@ function ProductManager() {
   const [editId, setEditId] = useState(null);
   const [showQuantityForm, setShowQuantityForm] = useState(false);
   const [quantityForm, setQuantityForm] = useState({ product_id: null, quantity: 0 });
-  const [showInfoForm, setShowInfoForm] = useState(false);
-  const [infoForm, setInfoForm] = useState({ product_id: null, name: '', intro: '', description: '' });
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -152,7 +150,7 @@ function ProductManager() {
       setShowForm(false);
       fetchProducts();
     } catch (e) {
-      toast.error('Lưu sản phẩm thất bại');
+      toast.error('Thêm sản phẩm thất bại');
     }
   }; const handleQuantitySubmit = async (e) => {
     e.preventDefault();
@@ -162,38 +160,12 @@ function ProductManager() {
         toast.error('Số lượng không thể là số âm');
         return;
       }
-
-      console.log('Updating quantity for product ID:', quantityForm.product_id, 'New quantity:', quantity);
       await ProductApi.updateProductQuantity(quantityForm.product_id, { quantity: quantity });
       toast.success('Cập nhật số lượng thành công');
       setShowQuantityForm(false);
       fetchProducts();
     } catch (e) {
-      console.error('Update quantity error:', e);
-      toast.error('Cập nhật số lượng thất bại: ' + (e.message || 'Lỗi không xác định'));
-    }
-  };
-
-  // Removed unused handleShowInfoForm function
-
-  const handleInfoChange = (e) => {
-    setInfoForm({ ...infoForm, [e.target.name]: e.target.value });
-  };
-
-  const handleInfoSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await ProductApi.updateProduct({
-        product_id: infoForm.product_id,
-        name: infoForm.name,
-        intro: infoForm.intro,
-        description: infoForm.description
-      });
-      toast.success('Cập nhật thông tin thành công');
-      setShowInfoForm(false);
-      fetchProducts();
-    } catch (e) {
-      toast.error('Cập nhật thông tin thất bại');
+      toast.error('Cập nhật số lượng thất bại');
     }
   };
 
