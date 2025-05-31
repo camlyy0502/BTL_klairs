@@ -4,7 +4,7 @@ import AdminApi from '../../Api/Admin/AdminApi';
 import ProductApi from '../../Api/Admin/ProductApi';
 import { toast } from 'react-toastify';
 import { Button, Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
-import { DeleteOutlined, PlusOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 const STATUS_MAP = {
     'Chờ xử lý': 'PENDING',
@@ -37,13 +37,11 @@ function OrderManager() {
     const itemsPerPage = 10;
 
     // Thêm state cho trạng thái đang chỉnh sửa
-    const [editingStatus, setEditingStatus] = useState({});
     const [savingStatusId, setSavingStatusId] = useState(null);
     const [activeDropdown, setActiveDropdown] = useState(null);
 
     const [users, setUsers] = useState([]);
     const [products, setProducts] = useState([]);
-    const [matchedUser, setMatchedUser] = useState(null);
     const [matchedUsers, setMatchedUsers] = useState([]);
 
     // State lưu user đã chọn từ dropdown
@@ -172,29 +170,6 @@ function OrderManager() {
 
     const handleCloseDetail = () => {
         setSelectedOrder(null);
-    };
-
-    // Xử lý thay đổi trạng thái trên select
-    const handleStatusChange = (orderId, value) => {
-        setEditingStatus(prev => ({ ...prev, [orderId]: value }));
-    };
-
-    // Lưu trạng thái mới
-    const handleSaveStatus = async (order) => {
-        setSavingStatusId(order.id);
-        try {
-            await OrderApi.updateOrderStatus(order.id, editingStatus[order.id]);
-            toast.success('Cập nhật trạng thái thành công');
-            setEditingStatus(prev => {
-                const newObj = { ...prev };
-                delete newObj[order.id];
-                return newObj;
-            });
-            fetchOrders();
-        } catch {
-            toast.error('Cập nhật trạng thái thất bại');
-        }
-        setSavingStatusId(null);
     };
 
     const handleAddProduct = () => {
