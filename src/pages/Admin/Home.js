@@ -169,6 +169,22 @@ function Home() {
         setToDate(value);
     };
 
+    // Tính max thực tế của dữ liệu để quyết định có dùng suggestedMax hay không
+    const getYAxisOptions = (dataArr, type) => {
+        if (type === 'money') {
+            const max = Math.max(...dataArr, 0);
+            if (max <= 1) {
+                return { beginAtZero: true, min: 0, suggestedMax: 100000, ticks: { stepSize: 10000, callback: v => Number.isInteger(v) ? v : '' } };
+            }
+            return { beginAtZero: true, min: 0 };
+        }
+        const max = Math.max(...dataArr, 0);
+        if (max <= 5) {
+            return { beginAtZero: true, min: 0, suggestedMax: 8, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' } };
+        }
+        return { beginAtZero: true, min: 0};
+    };
+
     useEffect(() => {
         // Khi vào trang, load dữ liệu mặc định cho chart và orders
         fetchStats(fromDate, toDate);
@@ -247,7 +263,13 @@ function Home() {
 
             <div className="row mt-3">
                 <div className="col-md-12" style={{ marginBottom: "100px" }}>
-                    <Line data={lineOrderData} options={{ plugins: { legend: { display: false } } }} />
+                    <Line 
+                        data={lineOrderData} 
+                        options={{ 
+                            plugins: { legend: { display: false } },
+                            scales: { y: getYAxisOptions([...totalOrders, ...completedOrders, ...pendingOrders, ...cancelledOrders], "order") }
+                        }} 
+                    />
                     <div style={{ textAlign: 'center', marginTop: 8, color: '#888' }}>
                         <span style={{ marginRight: 16 }}><span style={{ display: 'inline-block', width: 12, height: 4, background: '#6c63ff', borderRadius: 2, marginRight: 4 }}></span>Tổng đơn hàng</span>
                         <span style={{ marginRight: 16 }}><span style={{ display: 'inline-block', width: 12, height: 4, background: '#43bfae', borderRadius: 2, marginRight: 4 }}></span>Đơn hoàn thành</span>
@@ -256,7 +278,13 @@ function Home() {
                     </div>
                 </div>
                 <div className="col-md-12" style={{ marginBottom: "100px" }}>
-                    <Line data={lineMonryData} options={{ plugins: { legend: { display: false } } }} />
+                    <Line 
+                        data={lineMonryData} 
+                        options={{ 
+                            plugins: { legend: { display: false } },
+                            scales: { y: getYAxisOptions(totalRevenue, "money") }
+                        }} 
+                    />
                     <div style={{ textAlign: 'center', marginTop: 8, color: '#888' }}>
                         <span style={{ display: 'inline-block', width: 12, height: 4, background: '#00b894', borderRadius: 2, marginRight: 4 }}></span>Tổng doanh thu
                     </div>
