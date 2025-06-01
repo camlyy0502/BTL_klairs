@@ -675,13 +675,14 @@ function ProductManager() {
                   e.preventDefault();
                   try {
                     const formData = new FormData();
+                    editingProduct.origin = editingProduct.origin.split(": ")[1] || editingProduct.origin;
                     const productData = {
                       name: editingProduct.name,
                       price: editingProduct.price,
                       quantity: editingProduct.quantity || 0,
                       short_description: editingProduct.short_description,
                       long_description: editingProduct.long_description,
-                      origin: editingProduct.origin ? "Xuất xứ: " + editingProduct.origin : "",
+                      origin: editingProduct.origin ? "Xuất xứ : " + editingProduct.origin : "",
                       category_id: editingProduct.category_id
                     };
 
@@ -730,7 +731,7 @@ function ProductManager() {
                 </div>
                 <div className="form-group">
                   <label>Xuất xứ</label>
-                  <input className="form-control" name="origin" value={editingProduct.origin} onChange={e => setEditingProduct({ ...editingProduct, origin: e.target.value })} />
+                  <input className="form-control" name="origin" value={editingProduct.origin.split(": ")[1]} onChange={e => setEditingProduct({ ...editingProduct, origin: e.target.value })} />
                 </div>
                 <div className="form-group">
                   <label>Giá (VNĐ)</label>

@@ -224,26 +224,48 @@ function Header() {
                             </div>
                             <div className='col-md-1 user-container'>
                                 <i className="fas fa-user" style={{ fontSize: '20px', color: '#666666D9' }}></i>
-                                <div className='user-form text-center' style={{ position: 'absolute', top: '100%', width: "300px", height: "150px", right: 0, backgroundColor: '#fff', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)', zIndex: 100 }}>
+                                <div
+                                    className='user-form text-center'
+                                    style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        width: "300px",
+                                        minHeight: 90,
+                                        right: 0,
+                                        backgroundColor: '#fff',
+                                        borderRadius: '4px',
+                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                        zIndex: 100,
+                                        padding: '16px 0'
+                                    }}
+                                >
                                     {
                                         userData && userData.username ? (
                                             <div className='m-0' style={{ fontSize: '18px' }}>
                                                 <span>Xin chào {userData.username}</span>
-                                                <div style={{marginTop: 8}}>
+                                                <div style={{ marginTop: 8 }}>
                                                     <a href='/orders' style={{ color: location.pathname.startsWith('/orders') ? '#000' : '#888', cursor: 'pointer' }}
                                                         onMouseEnter={e => e.target.style.color = '#000'}
                                                         onMouseLeave={e => e.target.style.color = location.pathname.startsWith('/orders') ? '#000' : '#888'}>
                                                         Đơn hàng
                                                     </a>
                                                 </div>
-                                                <div style={{marginTop: 8}}>
+                                                <div style={{ marginTop: 8 }}>
                                                     <a href='/account/addresses' style={{ color: location.pathname.startsWith('/account/addresses') ? '#000' : '#888', cursor: 'pointer' }}
                                                         onMouseEnter={e => e.target.style.color = '#000'}
                                                         onMouseLeave={e => e.target.style.color = location.pathname.startsWith('/account/addresses') ? '#000' : '#888'}>
-                                                        Quản lý địa chỉ giao hàng
+                                                        Quản lý địa chỉ
                                                     </a>
                                                 </div>
-                                                <div style={{marginTop: 8, cursor: 'pointer', color: '#e53935'}} onClick={handleLogout}>Đăng xuất</div>
+                                                {/* Thêm option chuyển tới admin nếu không phải CUSTOMER */}
+                                                {userData.roles && !userData.roles.includes('CUSTOMER') && (
+                                                    <div style={{ marginTop: 8 }}>
+                                                        <a href="/admin" style={{ color: '#1976d2', cursor: 'pointer', fontWeight: 500 }}>
+                                                            Chuyển tới trang admin
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                <div style={{ marginTop: 8, cursor: 'pointer', color: '#e53935' }} onClick={handleLogout}>Đăng xuất</div>
                                             </div>
                                         ) : (
                                             <div className='m-0' style={{ fontSize: '18px' }}>

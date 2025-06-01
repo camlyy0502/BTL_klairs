@@ -117,7 +117,7 @@ const Login = ({ isVisible, onClose, isRegister }) => {
                             />
                             <div style={{ position: 'relative', width: '284px' }}>
                                 <input 
-                                    type={showSignUpPassword ? "password" : "text"}
+                                    type={showSignUpPassword ? "text" : "password"}
                                     placeholder="Password" 
                                     value={signUpData.password}
                                     onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
@@ -135,7 +135,7 @@ const Login = ({ isVisible, onClose, isRegister }) => {
                                         zIndex: 2
                                     }}
                                 >
-                                    {showSignUpPassword ? (
+                                    {!showSignUpPassword ? (
                                         <i className="fas fa-eye-slash"></i>
                                     ) : (
                                         <i className="fas fa-eye"></i>
@@ -163,7 +163,7 @@ const Login = ({ isVisible, onClose, isRegister }) => {
                             />
                             <div style={{ position: 'relative', width: '284px' }}>
                                 <input 
-                                    type={showPassword ? "password" : "text"}
+                                    type={showPassword ? "text" : "password"}
                                     placeholder="Password" 
                                     value={loginData.password}
                                     onChange={(e) => setLoginData({...loginData, password: e.target.value})}
@@ -181,9 +181,9 @@ const Login = ({ isVisible, onClose, isRegister }) => {
                                         zIndex: 2
                                     }}
                                 >
-                                    {showPassword ? (
-                                        <i className="fas fa-eye"></i>
-                                    ) : (                                        
+                                    {!showPassword ? (
+                                        <i className="fas fa-eye-slash"></i>
+                                    ) : (
                                         <i className="fas fa-eye"></i>
                                     )}
                                 </span>
