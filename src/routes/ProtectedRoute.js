@@ -13,14 +13,15 @@ const ProtectedRoute = ({ children }) => {
       try {
         const res = await AccountApi.info();
         if (res.roles && res.roles.includes("CUSTOMER")) {
-          // If user has 'CUSTOMER' role, logout and redirect
-          await AccountApi.logout();
+          // Nếu là CUSTOMER thì về dashboard
           if (isMounted) setRedirectRoot(true);
           return;
         }
         if (isMounted) setIsAuth(true);
       } catch (error) {
-        if (isMounted) setIsAuth(false);
+        // Nếu lỗi cũng về dashboard
+        if (isMounted) setRedirectRoot(true);
+        return;
       } finally {
         if (isMounted) setAuthChecked(true);
       }
@@ -31,7 +32,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (redirectRoot) return <Navigate to="/" replace />;
   if (!authChecked) return null; // or a loading spinner
-  if (!isAuth) return <Navigate to="" replace />;
+  if (!isAuth) return <Navigate to="/" replace />;
   return children;
 };
 

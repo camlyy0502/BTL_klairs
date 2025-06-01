@@ -1,9 +1,16 @@
 import axiosClient from "../AxiosClient";
 
 const OrderAdminApi = {
-    getAllOrder: async () => {
+    getAllOrder: async (startDate, endDate) => {
         try {
-            const response = await axiosClient.get('/api/admin/orders');
+            const response = await axiosClient.get('/api/admin/orders',
+                {
+                    params: {
+                    startDate,
+                    endDate,
+                    }
+                }
+            );
             return response;
         } catch (error) {
             console.error('API Error:', error);

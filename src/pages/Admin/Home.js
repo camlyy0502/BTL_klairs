@@ -16,20 +16,6 @@ function Home() {
     const [toDate, setToDate] = useState(dayjs().format('YYYY-MM-DD'));
     const [userMap, setUserMap] = useState({});
 
-
-    const fetchStats = async (fromDate, toDate) => {
-        AdminApi.reportStats(fromDate, toDate)
-            .then(res => {
-                setStats(res);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-        };
-
-    useEffect(() => {
-        fetchStats(fromDate, toDate);
-    }, [fromDate, toDate]);
-
     // Fetch danh sách user và build userMap
     useEffect(() => {
         AdminApi.listAccount().then(users => {
@@ -42,15 +28,21 @@ function Home() {
         });
     }, []);
 
+    const fetchStats = async (fromDate, toDate) => {
+        setLoading(true);
+        AdminApi.reportStats(fromDate, toDate)
+            .then(res => {
+                setStats(res);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+        };
+
     const fetchOrders = async (fromDate, toDate) => {
         // Giả sử AdminApi.listOrders là API lấy danh sách đơn hàng theo ngày
-        const res = await OrderAdminApi.getAllOrder();
+        const res = await OrderAdminApi.getAllOrder(fromDate, toDate); // Nên truyền fromDate, toDate nếu API hỗ trợ
         setOrders(res);
     };
-
-    useEffect(() => {
-        fetchOrders(fromDate, toDate);
-    }, [fromDate, toDate]);
 
     // Xử lý dữ liệu từ stats
     const periods = stats.map(item => item.period);
@@ -126,6 +118,7 @@ function Home() {
             return;
         }
         fetchStats(fromDate, toDate);
+        fetchOrders(fromDate, toDate);
     };
 
     const exportToExcel = () => {
@@ -175,6 +168,13 @@ function Home() {
         }
         setToDate(value);
     };
+
+    useEffect(() => {
+        // Khi vào trang, load dữ liệu mặc định cho chart và orders
+        fetchStats(fromDate, toDate);
+        fetchOrders(fromDate, toDate);
+        // eslint-disable-next-line
+    }, []);
 
     return (
         <div className="p-3" style={{ background: "#fff", minHeight: "100vh" }}>
