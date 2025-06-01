@@ -60,6 +60,7 @@ function BotScenariosPage() {
         try {
         // Cập nhật kịch bản
         await BotScenariosApi.updateBotScenario(editing.id, values);
+        toast.success('Cập nhật kịch bản thành công');
         } catch (error) {
           toast.error('Cập nhật kịch bản thất bại');
         }
@@ -67,6 +68,7 @@ function BotScenariosPage() {
         try {
         // Tạo kịch bản mới
           await BotScenariosApi.createBotScenarios(values);
+          toast.success('Thêm kịch bản thành công');
         } catch (error) {
           toast.error('Tạo kịch bản thất bại');
         }
@@ -203,9 +205,9 @@ function BotScenariosPage() {
               <Option value="PRODUCT_LIST">Danh sách sản phẩm</Option>
             </Select>
           </Form.Item>
-          <Form.Item name="enabled" label="Trạng thái" valuePropName="checked">
+          {/* <Form.Item name="enabled" label="Trạng thái" valuePropName="checked">
             <Switch />
-          </Form.Item>
+          </Form.Item> */}
         </Form>
       </Modal>
     </div>
