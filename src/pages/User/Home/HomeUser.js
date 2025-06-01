@@ -12,7 +12,8 @@ function Home() {
               const res = await DashboardApi.getAllProduct();
               setProducts(res.data);
             } catch (error) {
-              throw error;
+                console.error("Error fetching products:", error);
+            //   throw error;
             }
           };
           fetchAllProduct();
