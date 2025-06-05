@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Form, Input, Select, Switch, InputNumber, Row, Col, Divider } from "antd";
+import { Table, Button, Modal, Form, Input, Select, Switch, InputNumber, Row, Col } from "antd";
+import { SettingOutlined } from '@ant-design/icons';
 
 import BotScenariosApi from '../../../Api/Admin/BotScenarios';
 import { toast } from "react-toastify";
+import { data } from "react-router-dom";
 
 
 const { Option } = Select;
@@ -16,6 +18,8 @@ function BotScenariosPage() {
   const [searchText, setSearchText] = useState('');
   const [botEnabled, setBotEnabled] = useState(true);
   const [globalMinReplyTime, setGlobalMinReplyTime] = useState(10);
+  const [tempReplyTime, setTempReplyTime] = useState(globalMinReplyTime);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   const filteredScenarios = scenarios.filter(scenario => {
     const searchLower = searchText.toLowerCase();
@@ -100,23 +104,57 @@ function BotScenariosPage() {
     }
   };
 
-  useEffect(() => {
-    const updateBotConfig = async () => {
+  const handleBotEnabledChange = async () => {
+    try {
+      await BotScenariosApi.changeStatusBotScenario();
+    } catch (error) {
+      toast.error('Cập nhật trạng thái bot thất bại');
+    } finally {
       try {
-        await BotScenariosApi.updateBotConfig({
-          enabled: botEnabled,
-          globalMinReplyTime
-        });
-      } catch (error) {
-        Modal.error({
-          title: 'Lỗi cập nhật cấu hình',
-          content: 'Không thể cập nhật cấu hình bot. Vui lòng thử lại.'
-        });
+        const status = await BotScenariosApi.getStatusBotScenario();
+        const enabled = status.data ?? status;
+        setBotEnabled(enabled);
+        toast.success(enabled ? 'Đã bật bot thành công' : 'Đã tắt bot thành công');
+      } catch (e) {
+        // fallback: không cập nhật UI nếu lỗi
       }
-    };
+    }
+  };
 
-    updateBotConfig();
-  }, [botEnabled, globalMinReplyTime]);
+  const handleSettingsOpen = async () => {
+    try {
+      const [status, time] = await Promise.all([
+        BotScenariosApi.getStatusBotScenario(),
+        BotScenariosApi.getBotTimeScenario()
+      ]);
+      setBotEnabled(status.data ?? status); // .data nếu API trả về {data: true/false}, fallback nếu trả về boolean
+      setGlobalMinReplyTime(time / 60);
+      setTempReplyTime(time / 60);
+    } catch (e) {
+      setBotEnabled(true);
+      setGlobalMinReplyTime(10);
+      setTempReplyTime(10);
+    }
+    setSettingsVisible(true);
+  };
+
+  const handleSettingsOk = async () => {
+    try {
+      console.log('Updating reply time:', tempReplyTime);
+      await BotScenariosApi.setBotTimeScenario({ time: tempReplyTime * 60 });
+      toast.success('Cập nhật thời gian chờ trả lời thành công');
+    } catch (error) {
+      toast.error('Cập nhật thời gian chờ trả lời thất bại');
+    } finally {
+      try {
+        const time = await BotScenariosApi.getBotTimeScenario();
+        setGlobalMinReplyTime(time / 60);
+      } catch (e) {
+        // fallback: không cập nhật UI nếu lỗi
+      }
+      setSettingsVisible(false);
+    }
+  };
 
   const columns = [
     { title: "Từ khóa", dataIndex: "keyword" },
@@ -148,6 +186,12 @@ function BotScenariosPage() {
                 >
                   Thêm mới kịch bản
                 </Button>
+                <Button
+                  icon={<SettingOutlined />}
+                  style={{ float: 'right', marginRight: 10 }}
+                  onClick={handleSettingsOpen}
+                  title="Cài đặt bot"
+                />
                 <Input.Search
                   placeholder="Tìm kiếm theo từ khóa hoặc câu trả lời..."
                   value={searchText}
@@ -158,21 +202,6 @@ function BotScenariosPage() {
               </h4>
             </div>
             <div className="card-body">
-              {/* <Row gutter={16} className="mb-3">
-                <Col>
-                  <span className="me-2">Bật/Tắt Bot:</span>
-                  <Switch checked={botEnabled} onChange={setBotEnabled} />
-                </Col>
-                <Col>
-                  <span className="me-2">Thời gian chờ trả lời (Phút):</span>
-                  <InputNumber 
-                    min={0} 
-                    value={globalMinReplyTime} 
-                    onChange={setGlobalMinReplyTime} 
-                  />
-                </Col>
-              </Row>
-              <Divider /> */}
               <Table 
                 rowKey="id" 
                 columns={columns} 
@@ -205,10 +234,31 @@ function BotScenariosPage() {
               <Option value="PRODUCT_LIST">Danh sách sản phẩm</Option>
             </Select>
           </Form.Item>
-          {/* <Form.Item name="enabled" label="Trạng thái" valuePropName="checked">
-            <Switch />
-          </Form.Item> */}
         </Form>
+      </Modal>
+
+      {/* Settings Modal */}
+      <Modal
+        title="Cài đặt Bot"
+        open={settingsVisible}
+        onOk={handleSettingsOk}
+        onCancel={() => setSettingsVisible(false)}
+        destroyOnClose
+      >
+        <Row gutter={16} className="mb-3">
+          <Col span={24} style={{ marginBottom: 16 }}>
+            <span className="me-2">Tắt/Bật Bot:</span>
+            <Switch checked={botEnabled} onChange={handleBotEnabledChange} />
+          </Col>
+          <Col span={24}>
+            <span className="me-2">Thời gian chờ trả lời (Phút):</span>
+            <InputNumber 
+              min={1} 
+              value={tempReplyTime} 
+              onChange={setTempReplyTime} 
+            />
+          </Col>
+        </Row>
       </Modal>
     </div>
   );

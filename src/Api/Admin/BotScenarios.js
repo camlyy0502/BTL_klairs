@@ -55,6 +55,42 @@ const BotScenariosApi = {
         throw error;
         }
     },
+    getStatusBotScenario: async () => {
+        try {
+            const response = await axiosClient.get(`/api/admin/bot_scenarios/status`);
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+        throw error;
+        }
+    },
+    changeStatusBotScenario: async () => {
+        try {
+            const response = await axiosClient.post(`/api/admin/bot_scenarios/status`);
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+        throw error;
+        }
+    },
+    getBotTimeScenario: async () => {
+        try {
+            const response = await axiosClient.get(`/api/admin/bot_scenarios/time`);
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+        throw error;
+        }
+    },
+    setBotTimeScenario: async (body) => {
+        try {
+            const response = await axiosClient.post(`/api/admin/bot_scenarios/time`, body);
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+        throw error;
+        }
+    },
 }
 
 export default BotScenariosApi;
