@@ -48,47 +48,40 @@ export default function ChatBot() {
     const [connected, setConnected] = useState(false);
 
     const stompClientRef = useRef(null);
+    const connectedRef = useRef(false);
+    const usernameRef = useRef("");
 
     const connect = () => {
-        if (!username) return;
-        if (connected) return;
+        console.log('Connecting to WebSocket...');
+        if (!usernameRef.current) return;
+        if (connectedRef.current) return;
         const socket = new SockJS(process.env.REACT_APP_API + '/ws');
         const stompClient = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 try {
-                    stompClient.subscribe(`/user/${username}/queue/messages`, (msg) => {
+                    stompClient.subscribe(`/user/${usernameRef.current}/queue/messages`, (msg) => {
                         try {
                             const payload = JSON.parse(msg.body);
-                            // Chỉ thêm tin nhắn nếu không phải do mình gửi
-                            if (payload.sender !== username) {
-                                setMessages(prev => {
-                                    // Kiểm tra xem tin nhắn đã tồn tại chưa
-                                    const messageExists = prev.some(m => 
-                                        m.message === payload.message && 
-                                        m.sender === payload.sender
-                                    );
-                                    if (messageExists) return prev;
-
-                                    const newMsgs = [...prev, {
-                                        id: prev.length + 1,
-                                        message: payload.message,
-                                        sender: payload.sender
-                                    }];
-                                    
-                                    setTimeout(() => {
-                                        if (chatRef.current) {
-                                            chatRef.current.scrollTop = chatRef.current.scrollHeight;
-                                        }
-                                    }, 0);
-                                    return newMsgs;
-                                });
-                            }
+                            setMessages(prev => {
+                                const newMsgs = [...prev, {
+                                    id: prev.length + 1,
+                                    message: payload.message,
+                                    sender: payload.sender
+                                }];
+                                setTimeout(() => {
+                                    if (chatRef.current) {
+                                        chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                                    }
+                                }, 0);
+                                return newMsgs;
+                            });
                         } catch (e) {
                             console.error('Parse message error:', e);
                         }
                     });
                     setConnected(true);
+                    connectedRef.current = true;
                     setTimeout(() => {
                         if (chatRef.current) {
                             chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -96,20 +89,22 @@ export default function ChatBot() {
                     }, 0);
                 } catch (e) {
                     setConnected(false);
+                    connectedRef.current = false;
                     console.error('Subscribe error:', e);
                 }
             },
             onStompError: (frame) => {
                 console.error('Broker reported error: ' + frame.headers['message']);
                 setConnected(false);
+                connectedRef.current = false;
             },
             onWebSocketClose: () => {
                 setConnected(false);
+                connectedRef.current = false;
                 setTimeout(() => {
-                    if (!connected) connect();
+                    if (!connectedRef.current) connect();
                 }, 2000);
             },
-            debug: (str) => console.log(str, connected)
         });
         stompClientRef.current = stompClient;
         try {
@@ -207,6 +202,19 @@ export default function ChatBot() {
         return () => window.removeEventListener('keydown', handleEsc);
     }, [showNotification]);
 
+    useEffect(() => {
+        usernameRef.current = username;
+    }, [username]);
+    useEffect(() => {
+        connectedRef.current = connected;
+    }, [connected]);
+    useEffect(() => {
+        if (showNotification && !connectedRef.current) {
+            connect();
+        }
+        // eslint-disable-next-line
+    }, [showNotification]);
+
     return (
         <div>
             <div className="zalo-bt">
@@ -216,9 +224,8 @@ export default function ChatBot() {
                     onClick={async () => {
                         setShowNotification((prev) => {
                             const next = !prev;
-                            if (next && !connected) {
+                            if (next) {
                                 getChatHistory();
-                                connect();
                             }
                             return next;
                         });
