@@ -33,25 +33,21 @@ function Chat() {
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // --- INTERVAL lấy lại danh sách tài khoản đã từng chat ---
     useEffect(() => {
         const getUserHaveChat = async () => {
             try {
                 const res = await AdminApi.listUserHaveChat();
                 setUserHaveChat(res);
-                setUserList(res); // set userList from users fetched
+                setUserList(res);
             } catch (error) {
                 console.error("Failed to get user info:", error);
             }
         };
         getUserHaveChat();
-        const interval = setInterval(getUserHaveChat, 1000); // fetch every 5 seconds
+        const interval = setInterval(getUserHaveChat, 10000); // 10s
         return () => clearInterval(interval);
     }, []);
-
-    // Keep userList in sync with users if users change
-    useEffect(() => {
-        setUserList(users);
-    }, [users]);
 
     const [messagesMap, setMessagesMap] = useState({}); // { [userEmail]: [messages] }
     const [messages, setMessages] = useState([]);
@@ -66,7 +62,8 @@ function Chat() {
 
     const [username, setUsername] = useState('');
     const stompClientAdminRef = useRef(null);
-    const [isWSConnected, setIsWSConnected] = useState(false);    const sendMessageWS = () => {
+    const [isWSConnected, setIsWSConnected] = useState(false);
+    const sendMessageWS = () => {
         const stompClientAdmin = stompClientAdminRef.current;
         if (!stompClientAdmin) {
             console.warn('STOMP client is not connected yet');
@@ -89,25 +86,31 @@ function Chat() {
             body: JSON.stringify(payload),
         });
 
-        // Immediately append the sent message to the chat
+        // Chỉ cập nhật messagesMap, KHÔNG gọi setMessages ở đây
         setMessagesMap(prev => {
             const prevMsgs = prev[username] || [];
-            const newMsgs = [...prevMsgs, { 
-                id: prevMsgs.length + 1, 
-                message: input, 
+            const newMsgs = [...prevMsgs, {
+                id: prevMsgs.length + 1,
+                message: input,
                 sender: userData.username,
-                sent_at: new Date().toISOString() // Thêm thời gian cho tin nhắn mới
+                sent_at: new Date().toISOString()
             }];
-            setMessages(newMsgs);
             return {
                 ...prev,
                 [username]: newMsgs
             };
         });
-
-        // Xóa input sau khi gửi tin nhắn
-        setInput('');
-
+        // Đưa user lên đầu danh sách sau khi gửi tin nhắn
+        setUserList(prevList => {
+            const idx = prevList.findIndex(u => u.email === username);
+            if (idx > 0) {
+                const updated = [...prevList];
+                const [moved] = updated.splice(idx, 1);
+                updated.unshift(moved);
+                return updated;
+            }
+            return prevList;
+        });
         setInput('');
     };
 
@@ -129,19 +132,15 @@ function Chat() {
     const [unreadCounts, setUnreadCounts] = useState({});
     const subscribedUsersRef = useRef({});
 
-    // 1. Tạo WebSocket chỉ 1 lần khi userData.username có giá trị
+    // --- WebSocket: chỉ mở 1 kết nối, mỗi user chỉ subscribe 1 lần ---
     useEffect(() => {
         if (!userData.username) return;
         const socketAdmin = new SockJS(process.env.REACT_APP_API + '/ws');
         const stompClientAdmin = new Client({
             webSocketFactory: () => socketAdmin,
-            onConnect: () => {
-                setIsWSConnected(true);
-            },
-            onDisconnect: () => {
-                setIsWSConnected(false);
-            },
-            debug: (str) => console.log(str),
+            onConnect: () => setIsWSConnected(true),
+            onDisconnect: () => setIsWSConnected(false),
+            debug: (str) => {},
         });
         stompClientAdminRef.current = stompClientAdmin;
         stompClientAdmin.activate();
@@ -152,46 +151,41 @@ function Chat() {
         };
     }, [userData.username]);
 
-    // 2. Khi userList thay đổi, chỉ subscribe các user mới trên kết nối đã có
     useEffect(() => {
         if (!isWSConnected || !stompClientAdminRef.current) return;
         const stompClientAdmin = stompClientAdminRef.current;
         userList.forEach(user => {
             if (!subscribedUsersRef.current[user.email]) {
-                stompClientAdmin.subscribe(`/user/${user.email}/queue/messages`, async (msg) => {
+                const sub = stompClientAdmin.subscribe(`/user/${user.email}/queue/messages`, async (msg) => {
                     const payload = JSON.parse(msg.body);
-                    // Ignore messages sent by the admin themselves to prevent duplicates
-                    if (payload.sender === userData.username) return;
-                    // If the sender is not in userList, reload userList from API
-                    if (!userList.some(u => u.email === payload.sender)) {
-                        try {
-                            const res = await AdminApi.listUserHaveChat();
-                            setUserHaveChat(res);
-                            setUserList(res);
-                        } catch (error) {
-                            console.error("Failed to reload user list:", error);
-                        }
-                    }                    // Update messagesMap for this user
+                    // Nếu tin nhắn gửi đi là của admin, không cần cập nhật
+                    if (payload.sender === "admin@gmail.com") {
+                        return;
+                    }
                     setMessagesMap(prev => {
                         const prevMsgs = prev[user.email] || [];
                         return {
                             ...prev,
-                            [user.email]: [...prevMsgs, { 
-                                id: prevMsgs.length + 1, 
-                                message: payload.message, 
+                            [user.email]: [...prevMsgs, {
+                                id: prevMsgs.length + 1,
+                                message: payload.message,
                                 sender: payload.sender,
-                                sent_at: new Date().toISOString() // Thêm thời gian cho tin nhắn nhận được
+                                sent_at: new Date().toISOString()
                             }]
                         };
                     });
-                    // If not currently selected user, increment unread count and move to top
+                    // Đếm tin nhắn chưa đọc
                     if (user.email !== username) {
                         setUnreadCounts(prev => ({
                             ...prev,
                             [user.email]: (prev[user.email] || 0) + 1
                         }));
+                    } else {
+                        setUnreadCounts(prev => ({ ...prev, [user.email]: 0 }));
                     }
+                    // Đưa user lên đầu danh sách nếu có tin nhắn mới
                     setUserList(prevList => {
+                        console.log("prevList", prevList);
                         const idx = prevList.findIndex(u => u.email === user.email);
                         if (idx > 0) {
                             const updated = [...prevList];
@@ -201,23 +195,18 @@ function Chat() {
                         }
                         return prevList;
                     });
-                    // If currently selected user, reset unread (KHÔNG gọi setMessages ở đây)
-                    if (user.email === username) {
-                        setUnreadCounts(prev => ({ ...prev, [user.email]: 0 }));
-                        setInput('');
-                    }
                 });
-                subscribedUsersRef.current[user.email] = true;
+                subscribedUsersRef.current[user.email] = sub;
             }
         });
-        // Unsubscribe users đã bị xóa khỏi userList
+        // Unsubscribe các user không còn trong userList
         Object.keys(subscribedUsersRef.current).forEach(email => {
             if (!userList.some(u => u.email === email)) {
-                // Không có unsubscribe trực tiếp với stompjs, nên chỉ xóa khỏi ref
+                subscribedUsersRef.current[email].unsubscribe();
                 delete subscribedUsersRef.current[email];
             }
         });
-    }, [userList, isWSConnected, username, userData.username]);
+    }, [userList, isWSConnected, username]);
 
     // When selecting a user, show their messages
     const selectUser = (userId) => {
@@ -229,7 +218,6 @@ function Chat() {
     };
 
     const [selectedUser, setSelectedUser] = useState(null);
-    
     const [selectedUserEmail, setSelectedUserEmail] = useState(null);
 
     // Polling: fetch selected user's chat history every 1 seconds
@@ -239,7 +227,7 @@ function Chat() {
         if (!user) return;
         const interval = setInterval(() => {
             getChatHisoty(user.email);
-        }, 1000); // 1 seconds
+        }, 10000); // 10s
         return () => clearInterval(interval);
     }, [selectedUser, userList]);
     
